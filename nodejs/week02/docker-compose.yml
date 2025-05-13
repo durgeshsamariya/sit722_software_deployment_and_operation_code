@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  product_db:
+    image: postgres
+    container_name: product_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres          # ✅ Required and non-empty
+      POSTGRES_DB: products
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product_backend:
+    build: ./backend/product_service
+    container_name: product_backend
+    ports:
+      - "4000:4000"
+    depends_on:
+      product_db:
+        condition: service_healthy
+
+  product_frontend:
+    build: ./frontend/react-app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - product_backend
