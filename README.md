@@ -1,1 +1,1 @@
-# -code-sit722_software_deployment_and_operation
+# SIT722 Software Deployment and Operation
