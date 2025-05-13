@@ -1,0 +1,82 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+env/
+venv/
+ENV/
+.venv/
+Lib/
+site-packages/
+Include/
+Scripts/
+*.egg-info/
+*.egg
+sdist/
+dist/
+wheels/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.log
+*.ini
+*.db
+*.sqlite
+instance/
+_build/
+build/
+develop-eggs/
+eggs/
+MANIFEST
+*.manifest
+*.spec
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# Mac OS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+NetworkTrashFolder
+/.file
+/Temporary Items
+/private/var/folders/*
+
+# Node.js and npm
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+.pnp*
+
+# React
+build/
+
+# Optional - Logs and temp files
+logs/
+*.swp
+*.swo
+*~
+\#*\#
