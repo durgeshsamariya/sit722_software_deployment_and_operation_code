@@ -1,0 +1,21 @@
+# k8s/order-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order
+          image: week04-order_service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001

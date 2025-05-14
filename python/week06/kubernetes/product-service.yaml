@@ -1,0 +1,13 @@
+# k8s/product-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  type: NodePort
+  selector:
+    app: product-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30080
