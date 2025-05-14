@@ -1,0 +1,13 @@
+# k8s/order-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  type: NodePort
+  selector:
+    app: order-service
+  ports:
+    - port: 8001
+      targetPort: 8001
+      nodePort: 30081

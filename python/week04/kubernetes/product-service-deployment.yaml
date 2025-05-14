@@ -1,0 +1,32 @@
+# k8s/product-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+        - name: product
+          image: week04-product_service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "products"
+            - name: POSTGRES_HOST
+              value: "product-db"
+            - name: POSTGRES_PORT
+              value: "5432"
+          ports:
+            - containerPort: 8000
