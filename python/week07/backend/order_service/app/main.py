@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import Column, Integer, String
 from pydantic import BaseModel
 from .db import engine, Base, get_db
-
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
