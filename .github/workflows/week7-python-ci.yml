@@ -3,19 +3,19 @@ name: Week 7 Python CI
 on:
   pull_request:
     paths:
-      - 'python/week07/**'
+      - "python/week07/**"
   push:
     branches:
       - main
     paths:
-      - 'python/week07/**'
+      - "python/week07/**"
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.10]
+        python-version: ["3.11"]
 
     steps:
       - uses: actions/checkout@v3
