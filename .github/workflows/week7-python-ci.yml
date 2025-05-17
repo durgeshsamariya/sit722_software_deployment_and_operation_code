@@ -1,9 +1,15 @@
 name: Week 7 Python CI
 
 on:
+  # Manual trigger
+  workflow_dispatch:
+
+  # Automatically on PRs touching week07
   pull_request:
     paths:
       - "python/week07/**"
+
+  # Automatically on pushes to main touching week07
   push:
     branches:
       - main
@@ -18,29 +24,38 @@ jobs:
         python-version: ["3.11"]
 
     steps:
+      # 1. Checkout the entire repository
       - uses: actions/checkout@v3
-        with:
-          path: python/week07
 
+      # 2. Set up Python
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
+      # 3. Install dependencies for *each* microservice in week07
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r python/week07/backend/requirements.txt
+          # Loop through each backend service folder under week07
+          for req in python/week07/backend/*/requirements.txt; do
+            echo "Installing $req"
+            pip install -r "$req"
+          done
+          # Install CI tools
           pip install isort flake8 pytest
 
+      # 4. Verify import ordering
       - name: Check import order with isort
         run: |
           isort --check-only python/week07/backend
 
+      # 5. Lint with flake8
       - name: Lint with flake8
         run: |
           flake8 python/week07/backend
 
+      # 6. Run unit tests
       - name: Run pytest
         run: |
           pytest python/week07/backend --maxfail=1 --disable-warnings -q
