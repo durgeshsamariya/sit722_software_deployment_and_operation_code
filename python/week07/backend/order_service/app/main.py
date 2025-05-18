@@ -82,7 +82,8 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
 
 # Update
 @app.put("/orders/{order_id}", response_model=OrderResponse)
-def update_order(order_id: int, updated: OrderUpdate, db: Session = Depends(get_db)):
+def update_order(order_id: int, updated: OrderUpdate,
+                 db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
