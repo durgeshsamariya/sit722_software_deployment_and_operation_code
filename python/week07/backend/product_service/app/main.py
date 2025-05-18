@@ -1,11 +1,12 @@
 # week2/backend/product_service/app/main.py
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String
 from pydantic import BaseModel
-from .db import engine, Base, get_db
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import Session
+
+from .db import Base, engine, get_db
 
 
 # -----------------------------
