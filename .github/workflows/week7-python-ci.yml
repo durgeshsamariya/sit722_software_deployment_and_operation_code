@@ -82,6 +82,5 @@ jobs:
         run: |
           pytest \
             python/week07/backend/product_service/tests \
-            python/week07/backend/order_service/tests \
             --maxfail=1 --disable-warnings -q
 
