@@ -19,6 +19,21 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    services:
+      product_db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: products
+        # Make pg_isready available so the service is healthy before tests run
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     strategy:
       matrix:
         python-version: ["3.11"]
@@ -54,7 +69,14 @@ jobs:
       - name: Lint with flake8
         run: |
           flake8 python/week07/backend
-
+      - name: Set database env
+        run: |
+          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+          echo "POSTGRES_PORT=5432"    >> $GITHUB_ENV
+          echo "POSTGRES_DB=products"  >> $GITHUB_ENV
+          echo "POSTGRES_USER=postgres"     >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=postgres" >> $GITHUB_ENV
+      
       # 6. Run unit tests
       - name: Run pytest
         run: |
