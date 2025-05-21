@@ -19,7 +19,9 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+
     services:
+      # Product DB container
       product_db:
         image: postgres:15
         env:
@@ -34,6 +36,23 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      
+      # Order DB
+      order_db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: orders
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    # Define a strategy to run the job for each Python version
     strategy:
       matrix:
         python-version: ["3.11"]
@@ -62,25 +81,31 @@ jobs:
 
       # 4. Verify import ordering
       - name: Check import order with isort
-        run: |
-          isort --check-only python/week07/backend
+        run: isort --check-only python/week07/backend
 
       # 5. Lint with flake8
       - name: Lint with flake8
-        run: |
-          flake8 python/week07/backend
-      - name: Set database env
-        run: |
-          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
-          echo "POSTGRES_PORT=5432"    >> $GITHUB_ENV
-          echo "POSTGRES_DB=products"  >> $GITHUB_ENV
-          echo "POSTGRES_USER=postgres"     >> $GITHUB_ENV
-          echo "POSTGRES_PASSWORD=postgres" >> $GITHUB_ENV
+        run: flake8 python/week07/backend
       
-      # 6. Run unit tests
-      - name: Run pytest
+      - name: Run product_service tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: products
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: |
-          pytest \
-            python/week07/backend/product_service/tests \
+          pytest python/week07/backend/product_service/tests \
+            --maxfail=1 --disable-warnings -q
+      
+      - name: Run order_service tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433
+          POSTGRES_DB: orders
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          pytest python/week07/backend/order_service/tests \
             --maxfail=1 --disable-warnings -q
 
