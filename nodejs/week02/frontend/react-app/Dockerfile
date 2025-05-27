@@ -1,13 +1,23 @@
-# Use Node.js to build the React app
-FROM node:18-alpine AS builder
+# Use official Node.js image
+FROM node:18
+
+# Set working directory
 WORKDIR /app
+
+# Copy project files
 COPY . .
+
+# Install dependencies
 RUN npm install
+
+# Build the React app
 RUN npm run build
 
-# Serve the built app using a simple HTTP server
-FROM node:18-alpine
-WORKDIR /app
+# Install serve to serve the build folder
 RUN npm install -g serve
-COPY --from=builder /app/dist ./dist
-CMD ["serve", "-s", "dist", "-l", "5173"]
+
+# Expose port
+EXPOSE 3000
+
+# Serve the app
+CMD ["serve", "-s", "dist"]
