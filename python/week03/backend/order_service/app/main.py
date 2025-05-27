@@ -1,103 +1,103 @@
-from fastapi import FastAPI, Depends, HTTPException
+# backend/order_service/app/main.py
+
+"""
+Order Service — Week 3
+CRUD for orders, with synchronous stock check/update using Product Service REST API.
+"""
+
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String
-from pydantic import BaseModel
-from .db import engine, Base, get_db
+from db import engine, Base, get_db
+from models import Order
+from schemas import OrderCreate, OrderUpdate, OrderResponse
 
+import requests
+import os
 
-# -----------------------------
-# Models
-# -----------------------------
-class Order(Base):
-    __tablename__ = "orders"
+from dotenv import load_dotenv
+load_dotenv()
 
-    id = Column(Integer, primary_key=True, index=True)
-    customer_name = Column(String, index=True)
-    item = Column(String, index=True)
-
+PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8000")
 
 Base.metadata.create_all(bind=engine)
 
+app = FastAPI(
+    title="Order Service API",
+    description="Handles orders and syncs stock with Product Service.",
+    version="1.0.0"
+)
 
-# -----------------------------
-# Schemas
-# -----------------------------
-class OrderCreate(BaseModel):
-    customer_name: str
-    item: str
-
-
-class OrderUpdate(BaseModel):
-    customer_name: str
-    item: str
-
-
-class OrderResponse(OrderCreate):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-
-# -----------------------------
-# FastAPI app
-# -----------------------------
-app = FastAPI()
-
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For dev only — restrict in production
+    allow_origins=["*"],  # Restrict for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+def adjust_product_stock(product_id: int, delta: int):
+    """Adjust product stock via Product Service API."""
+    product_resp = requests.get(f"{PRODUCT_SERVICE_URL}/products/{product_id}")
+    if product_resp.status_code != 200:
+        raise HTTPException(status_code=404, detail="Product not found in Product Service")
+    product = product_resp.json()
+    new_stock = product["stock_quantity"] + delta
+    if new_stock < 0:
+        raise HTTPException(status_code=400, detail="Not enough stock for update")
+    update_resp = requests.put(
+        f"{PRODUCT_SERVICE_URL}/products/{product_id}/stock",
+        params={"stock_quantity": new_stock}
+    )
+    if update_resp.status_code not in (200, 201):
+        raise HTTPException(status_code=update_resp.status_code, detail="Failed to update stock in Product Service")
 
-# Create
-@app.post("/orders/", response_model=OrderResponse)
+@app.post("/orders/", response_model=OrderResponse, status_code=201)
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
-    db_order = Order(customer_name=order.customer_name, item=order.item)
+    adjust_product_stock(order.product_id, -order.quantity)
+    db_order = Order(
+        product_id=order.product_id,
+        customer_name=order.customer_name,
+        quantity=order.quantity
+    )
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
     return db_order
 
-
-# Read All
 @app.get("/orders/", response_model=list[OrderResponse])
 def list_orders(db: Session = Depends(get_db)):
     return db.query(Order).all()
 
-
-# Read One
 @app.get("/orders/{order_id}", response_model=OrderResponse)
 def get_order(order_id: int, db: Session = Depends(get_db)):
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).filter(Order.order_id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
-
-# Update
 @app.put("/orders/{order_id}", response_model=OrderResponse)
-def update_order(order_id: int, updated: OrderUpdate, db: Session = Depends(get_db)):
-    order = db.query(Order).filter(Order.id == order_id).first()
+def update_order(order_id: int, update: OrderUpdate, db: Session = Depends(get_db)):
+    order = db.query(Order).filter(Order.order_id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    order.customer_name = updated.customer_name
-    order.item = updated.item
+    prev_qty = order.quantity
+    delta = update.quantity - prev_qty
+    adjust_product_stock(order.product_id, -delta)
+    order.quantity = update.quantity
+    if update.customer_name:
+        order.customer_name = update.customer_name
     db.commit()
     db.refresh(order)
     return order
 
-
-# Delete
-@app.delete("/orders/{order_id}")
+@app.delete("/orders/{order_id}", status_code=204)
 def delete_order(order_id: int, db: Session = Depends(get_db)):
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).filter(Order.order_id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    adjust_product_stock(order.product_id, order.quantity)
     db.delete(order)
     db.commit()
-    return {"detail": "Order deleted successfully"}
+    return {"detail": "Order deleted"}
