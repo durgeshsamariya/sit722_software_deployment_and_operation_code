@@ -5,59 +5,37 @@ services:
     build: ./backend/product_service
     ports:
       - "8000:8000"
-    depends_on:
-      product_db:
-        condition: service_healthy
-
-  product_db:
-    image: postgres:15
-    container_name: product_db
+    env_file:
+      - ./backend/product_service/app/.env
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: products
-    volumes:
-      - product_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
 
   order_service:
     build: ./backend/order_service
     ports:
-      - "8001:8000"
-    depends_on:
-      order_db:
-        condition: service_healthy
-
-  order_db:
-    image: postgres:15
-    container_name: order_db
+      - "8001:8001"
+    env_file:
+      - ./backend/order_service/app/.env
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: orders
-    volumes:
-      - order_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    # React frontend
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
+
   react_app:
     build:
       context: ./frontend/react-app
       dockerfile: Dockerfile
     container_name: react_app
+    env_file:
+      - ./frontend/react-app/.env
     ports:
       - "3000:3000"
     depends_on:
       - product_service
       - order_service
-
-volumes:
-  product_data:
-  order_data:
