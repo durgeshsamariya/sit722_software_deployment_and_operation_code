@@ -140,12 +140,14 @@ export default function ProductsPage() {
             marginBottom: 32,
             maxWidth: '100vw',
             width: 800,
-            background: '#f9f9f9',
+            background: '#222831',
           }}
         >
-          <h2 style={{ color: 'black' }}>{editId ? 'Edit Product' : 'Add New Product'}</h2>
-          <form onSubmit={handleSubmit} autoComplete="off" style={{ color: 'black', padding: 10 }} encType="multipart/form-data">
-            <div style={{ marginBottom: 16, color: 'black' }}>
+          <h2 style={{ 
+            color: '#EEEEEE' 
+            }}>{editId ? 'Edit Product' : 'Add New Product'}</h2>
+          <form onSubmit={handleSubmit} autoComplete="off" style={{ color: '#EEEEEE', padding: 10 }} encType="multipart/form-data">
+            <div style={{ marginBottom: 16}}>
               <label>
                 Name:
                 <input
@@ -153,7 +155,7 @@ export default function ProductsPage() {
                   name="name"
                   value={form.name}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
                   required
                 />
               </label>
@@ -168,8 +170,8 @@ export default function ProductsPage() {
                   name="description"
                   value={form.description}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
-                  rows={2}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
+                  rows={5}
                   required
                 />
               </label>
@@ -188,7 +190,7 @@ export default function ProductsPage() {
                   name="price"
                   value={form.price}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
                   required
                 />
               </label>
@@ -204,7 +206,7 @@ export default function ProductsPage() {
                   name="stock_quantity"
                   value={form.stock_quantity}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
                   required
                 />
               </label>
@@ -222,7 +224,7 @@ export default function ProductsPage() {
                   name="image_file"
                   accept="image/*"
                   onChange={handleChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4}}
                 />
               </label>
               {errors.image && (

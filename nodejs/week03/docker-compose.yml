@@ -1,72 +1,44 @@
 version: '3.9'
 
 services:
-  # Product DB & Service
-  product_db:
-    image: postgres:15
-    container_name: product_db
+  product_service:
+    build: ./backend/product_service
+    container_name: product_service
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/product_service/.env
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: products
-    volumes:
-      - product_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
 
-  product_service:
-    build:
-      context: ./backend/product_service
-      dockerfile: Dockerfile
-    container_name: product_service
+  order_service:
+    build: ./backend/order_service
+    container_name: order_service
     ports:
-      - "8000:4000"
-    depends_on:
-      product_db:
-        condition: service_healthy
-
-  # Order DB & Service
-  order_db:
-    image: postgres:15
-    container_name: order_db
+      - "8001:8001"
+    env_file:
+      - ./backend/order_service/.env
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: orders
-    volumes:
-      - order_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  order_service:
-    build:
-      context: ./backend/order_service
-      dockerfile: Dockerfile
-    container_name: order_service
-    ports:
-      - "8001:4001"
-    depends_on:
-      order_db:
-        condition: service_healthy
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
 
   # React Frontend
   react_app:
     build:
       context: ./frontend/react-app
       dockerfile: Dockerfile
-    container_name: react_app
+    container_name: react_app_container
+    env_file:
+      - ./frontend/react-app/.env
     ports:
-      - "5173:5173"
+      - "3000:3000"
     depends_on:
       - product_service
       - order_service
-
-volumes:
-  product_data:
-  order_data:

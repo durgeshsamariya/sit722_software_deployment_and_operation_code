@@ -137,12 +137,12 @@ export default function OrdersPage() {
             marginBottom: 32,
             maxWidth: '100vw',
             width: 500,
-            background: '#f9f9f9',
+            background: '#222831',
           }}
         >
-          <h2 style={{ color: 'black' }}>{orderEditId ? 'Edit Order' : 'Add New Order'}</h2>
-          <form onSubmit={handleOrderSubmit} autoComplete="off" style={{ color: 'black', padding: 10 }}>
-            <div style={{ marginBottom: 16, color: 'black' }}>
+          <h2 style={{ color: '#EEEEEE' }}>{orderEditId ? 'Edit Order' : 'Add New Order'}</h2>
+          <form onSubmit={handleOrderSubmit} autoComplete="off" style={{ color: '#EEEEEE', padding: 10 }}>
+            <div style={{ marginBottom: 16}}>
               <label>
                 Customer Name:
                 <input
@@ -150,7 +150,7 @@ export default function OrdersPage() {
                   name="customer_name"
                   value={orderForm.customer_name}
                   onChange={handleOrderChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
                   required
                 />
               </label>
@@ -165,7 +165,7 @@ export default function OrdersPage() {
                   name="product_id"
                   value={orderForm.product_id}
                   onChange={handleOrderChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
                   required
                 >
                   <option value="">Select product...</option>
@@ -188,7 +188,7 @@ export default function OrdersPage() {
                   name="quantity"
                   value={orderForm.quantity}
                   onChange={handleOrderChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  style={{ width: '100%', padding: 8, marginTop: 4, background: '#EEEEEE', color: '#222831' }}
                   min="1"
                   required
                 />

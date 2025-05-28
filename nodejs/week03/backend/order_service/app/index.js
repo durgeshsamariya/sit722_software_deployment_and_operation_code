@@ -24,6 +24,7 @@ async function adjustProductStock(product_id, delta) {
   // 1. Get product info
   const prodResp = await axios.get(`${PRODUCT_SERVICE_URL}/products/${product_id}`)
     .catch(() => null)
+  console.log("Adusting stock for product_id:", product_id, "by delta:", delta);
   if (!prodResp || prodResp.status !== 200) {
     const err = new Error("Product not found in Product Service")
     err.status = 404
