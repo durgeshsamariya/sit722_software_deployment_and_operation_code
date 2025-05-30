@@ -1,25 +1,40 @@
-# db.py
+# backend/order_service/app/db.py
+
+"""
+Database connection setup for Order Service.
+"""
+
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import time
 
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@order-db:5432/orders"
+# Load environment variables from .env (for local development)
+load_dotenv()
 
-# Retry logic for DB health
-while True:
-    try:
-        engine = create_engine(SQLALCHEMY_DATABASE_URL)
-        break
-    except Exception:
-        print("Waiting for DB to be ready...")
-        time.sleep(2)
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "orders")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
+DATABASE_URL = (
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
+    f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+)
+
+# SQLAlchemy setup
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
 def get_db():
+    """
+    Dependency that provides a database session to path operations.
+    """
     db = SessionLocal()
     try:
         yield db

@@ -1,54 +1,56 @@
-import { useEffect, useState } from 'react'
+import { useState } from "react"
+import ProductsPage from "./pages/ProductsPage"
+import OrdersPage from "./pages/OrdersPage"
 
-function App() {
-  const [products, setProducts] = useState([])
-  const [orders, setOrders] = useState([])
-
-  useEffect(() => {
-    fetch('http://localhost:30080/products')
-      .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch((err) => console.error('Error fetching products:', err))
-  }, [])
-
-  useEffect(() => {
-    fetch('http://localhost:30081/orders')
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch((err) => console.error('Error fetching orders:', err))
-  }, [])
+export default function App() {
+  const [page, setPage] = useState("products")
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Product List</h1>
-      {products.length === 0 ? (
-        <p>No products found.</p>
-      ) : (
-        <ul>
-          {products.map((product) => (
-            <li key={product.id}>
-              <strong>{product.name}</strong>: {product.description}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <hr style={{ margin: '2rem 0' }} />
-
-      <h1>Order List</h1>
-      {orders.length === 0 ? (
-        <p>No orders found.</p>
-      ) : (
-        <ul>
-          {orders.map((order) => (
-            <li key={order.id}>
-              <strong>{order.customer_name}</strong> ordered: {order.item}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div
+      style={{
+        minHeight: "100vh",
+        minWidth: "100vw",
+        background: "#f4f6fb",
+        color: "#212121",
+        fontFamily: "Segoe UI, sans-serif",
+        margin: 10,
+        padding: 20,
+      }}
+    >
+      <h1>Mini Ecommerce</h1>
+      {/* Tab Navigation */}
+      <div style={{ marginBottom: 24, display: "flex", gap: 16 }}>
+        <button
+          onClick={() => setPage("products")}
+          style={{
+            background: page === "products" ? "#2979ff" : "#f2f2f2",
+            color: page === "products" ? "white" : "#2979ff",
+            border: "none",
+            borderRadius: 4,
+            fontWeight: "bold",
+            padding: "8px 16px",
+            cursor: "pointer",
+          }}
+        >
+          Products
+        </button>
+        <button
+          onClick={() => setPage("orders")}
+          style={{
+            background: page === "orders" ? "#2979ff" : "#f2f2f2",
+            color: page === "orders" ? "white" : "#2979ff",
+            border: "none",
+            borderRadius: 4,
+            fontWeight: "bold",
+            padding: "8px 16px",
+            cursor: "pointer",
+          }}
+        >
+          Orders
+        </button>
+      </div>
+      {/* Page Content */}
+      {page === "products" ? <ProductsPage /> : <OrdersPage />}
     </div>
   )
 }
-
-export default App
