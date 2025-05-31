@@ -1,0 +1,94 @@
+version: '3.9'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine # Use a version with the management UI
+    hostname: rabbitmq # This hostname will be used by other services to connect
+    ports:
+      - "5672:5672" # AMQP protocol port for clients
+      - "15672:15672" # Management UI (access via http://localhost:15672)
+    environment:
+      # These are default credentials for RabbitMQ, change in production!
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia # Persist RabbitMQ data
+    healthcheck: # Ensure RabbitMQ is ready before dependent services start
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # Give it time to start up initially
+    networks:
+      - ecom_network # Assign to our custom network
+    
+  product_service:
+    build: ./backend/product_service
+    image: week04_product
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/product_service/.env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: products
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq # Use the service name defined in docker-compose
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+    depends_on:
+      rabbitmq:
+        condition: service_healthy # Wait for RabbitMQ to be healthy
+    networks:
+      - ecom_network # Assign to our custom network
+
+  order_service:
+    build: ./backend/order_service
+    image: week04_order
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./backend/order_service/.env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq # Use the service name defined in docker-compose
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+    depends_on:
+      rabbitmq:
+        condition: service_healthy # Wait for RabbitMQ to be healthy
+    networks:
+      - ecom_network # Assign to our custom network
+
+  react_app:
+    build:
+      context: ./frontend/react-app
+      dockerfile: Dockerfile
+    image: week04_react_app
+    container_name: react_app
+    env_file:
+      - ./frontend/react-app/.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - product_service
+      - order_service
+    networks:
+      - ecom_network
+
+# Define named volumes for persistent data
+volumes:
+  rabbitmq_data:
+
+# Define a custom bridge network for better isolation and communication
+networks:
+  ecom_network:
+    driver: bridge

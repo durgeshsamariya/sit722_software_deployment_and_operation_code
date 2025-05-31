@@ -1,0 +1,419 @@
+# k8s-manifests.yaml
+# Kubernetes Manifests for Week 04 Microservices (Node.js Backend, React Frontend)
+# This configuration deploys PostgreSQL within Kubernetes, which is the recommended approach.
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecom-week04
+---
+# 1. PostgreSQL Database (for Products and Orders)
+# This will be a single PostgreSQL instance with two databases: 'products' and 'orders'
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pv-claim
+  namespace: ecom-week04
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi # Request 5GB of storage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db-deployment
+  namespace: ecom-week04
+  labels:
+    app: postgres-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "products" # Default database for the user
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          livenessProbe: # Basic health check
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe: # Basic readiness check
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-db-service
+  namespace: ecom-week04
+spec:
+  selector:
+    app: postgres-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP # Internal service, accessible by other pods via 'postgres-db-service:5432'
+
+---
+# 2. RabbitMQ Message Broker
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-pv-claim
+  namespace: ecom-week04
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi # Request 1GB of storage for RabbitMQ data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+  namespace: ecom-week04
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management-alpine
+          ports:
+            - containerPort: 5672 # AMQP
+            - containerPort: 15672 # Management UI
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "user"
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secrets
+                  key: RABBITMQ_PASS
+          volumeMounts:
+            - name: rabbitmq-storage
+              mountPath: /var/lib/rabbitmq/mnesia
+          livenessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "ping"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: rabbitmq-storage
+          persistentVolumeClaim:
+            claimName: rabbitmq-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: ecom-week04
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: 5672
+    - name: management
+      protocol: TCP
+      port: 15672
+      targetPort: 15672
+  type: ClusterIP # Internal service, can be NodePort if you want to access management UI from outside
+
+---
+# 3. Node.js Product Service
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-deployment
+  namespace: ecom-week04
+  labels:
+    app: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+        - name: product-service
+          image: week04_product:latest # Ensure you've built this image locally or pushed to a registry
+          ports:
+            - containerPort: 8000
+          env:
+            - name: PORT
+              value: "8000"
+            - name: POSTGRES_HOST
+              value: "postgres-db-service" # Connects to the K8s PostgreSQL service
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: "products"
+            - name: RABBITMQ_HOST
+              value: "rabbitmq-service" # Connects to the K8s RabbitMQ service
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              value: "user"
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secrets
+                  key: RABBITMQ_PASS
+            # AZURE_STORAGE_CONNECTION_STRING and AZURE_CONTAINER_NAME would go here if needed
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 3
+      imagePullSecrets: # Uncomment if using private registry
+        # - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: ecom-week04
+spec:
+  selector:
+    app: product-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP # Internal service
+
+---
+# 4. Node.js Order Service
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service-deployment
+  namespace: ecom-week04
+  labels:
+    app: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: week04_order:latest # Ensure you've built this image locally or pushed to a registry
+          ports:
+            - containerPort: 8001
+          env:
+            - name: PORT
+              value: "8001"
+            - name: POSTGRES_HOST
+              value: "postgres-db-service" # Connects to the K8s PostgreSQL service
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: "orders"
+            - name: RABBITMQ_HOST
+              value: "rabbitmq-service" # Connects to the K8s RabbitMQ service
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              value: "user"
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secrets
+                  key: RABBITMQ_PASS
+            - name: PRODUCT_SERVICE_URL
+              value: "http://product-service:8000" # Connects to the K8s Product Service
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 3
+      imagePullSecrets: # Uncomment if using private registry
+        # - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: ecom-week04
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+  type: ClusterIP # Internal service
+
+---
+# 5. React Frontend
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: ecom-week04
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: week04_react_app:latest # Ensure you've built this image locally or pushed to a registry
+          ports:
+            - containerPort: 3000
+          env:
+            # These env vars are for the frontend's build process or runtime
+            # They should point to the NodePort/LoadBalancer IP if accessing externally
+            # or ClusterIP if accessed by another service inside K8s (less common for frontend)
+            - name: REACT_APP_PRODUCT_SERVICE_URL
+              value: "http://localhost:8000" # This will be the host's exposed port
+            - name: REACT_APP_ORDER_SERVICE_URL
+              value: "http://localhost:8001" # This will be the host's exposed port
+      imagePullSecrets: # Uncomment if using private registry
+        # - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: ecom-week04
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: NodePort # Expose frontend externally (e.g., via Minikube IP or Docker Desktop K8s)
+
+---
+# 6. Secrets (for sensitive information)
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secrets
+  namespace: ecom-week04
+type: Opaque
+data:
+  # Base64 encoded values for your passwords
+  # echo -n "your_postgres_password" | base64
+  POSTGRES_PASSWORD: "cG9zdGdyZXM=" # Replace with base64 encoded 'postgres' or your actual password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-secrets
+  namespace: ecom-week04
+type: Opaque
+data:
+  # Base64 encoded values for your passwords
+  # echo -n "your_rabbitmq_password" | base64
+  RABBITMQ_PASS: "cGFzc3dvcmQ=" # Replace with base64 encoded 'password' or your actual password

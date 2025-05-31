@@ -1,0 +1,27 @@
+{
+  "name": "product_service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node app/index.js",
+    "dev": "nodemon app/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@azure/storage-blob": "^12.16.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.16.0",
+    "uuid": "^9.0.0",
+    "amqplib":"0.10.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
