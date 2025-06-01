@@ -1,300 +1,230 @@
-import { useEffect, useState } from 'react'
+// /src/pages/OrdersPage.jsx
 
-export default function OrdersPage() {
-  const [orders, setOrders] = useState([])
-  const [products, setProducts] = useState([])
-  const [showOrderForm, setShowOrderForm] = useState(false)
-  const [orderForm, setOrderForm] = useState({
-    customer_name: '',
+import React, { useEffect, useState } from 'react';
+import OrderList from '../components/OrderList';
+import OrderForm from '../components/ProductForm'; // Assuming ProductForm was a typo and you meant OrderForm, correct this if not
+import Button from '../components/Button';
+
+function OrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
     product_id: '',
     quantity: '',
-  })
-  const [orderErrors, setOrderErrors] = useState({})
-  const [orderEditId, setOrderEditId] = useState(null)
+    customer_name: '',
+  });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [globalError, setGlobalError] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch orders and products
-  const fetchOrders = () => {
-    fetch('http://localhost:8001/orders/')
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch(() => setOrders([]))
-  }
+  // Use environment variables for API base URLs
+  const ORDER_API_BASE_URL = import.meta.env.REACT_APP_ORDER_SERVICE_URL || 'http://localhost:8001';
+  const PRODUCT_API_BASE_URL = import.meta.env.REACT_APP_PRODUCT_SERVICE_URL || 'http://localhost:8000'; // Used by OrderRow
 
-  const fetchProducts = () => {
-    fetch('http://localhost:8000/products/')
-      .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch(() => setProducts([]))
-  }
+  // --- Fetch Orders ---
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    setGlobalError(null);
+    try {
+      const response = await fetch(`${ORDER_API_BASE_URL}/orders/`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      setOrders(data);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+      setGlobalError("Failed to load orders. Please check Order Service connection.");
+      setOrders([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchOrders()
-    fetchProducts()
-  }, [])
+    fetchOrders();
+  }, []);
 
-  // Order Handlers
-  const handleOrderOpenForm = () => {
-    setOrderForm({ customer_name: '', product_id: '', quantity: '' })
-    setOrderErrors({})
-    setOrderEditId(null)
-    setShowOrderForm(true)
-  }
+  // --- Form Handling (No changes needed here) ---
+  const handleOpenForm = () => {
+    setForm({ product_id: '', quantity: '', customer_name: '' });
+    setFieldErrors({});
+    setGlobalError(null);
+    setEditId(null);
+    setShowForm(true);
+  };
 
-  const handleOrderEdit = (order) => {
-    setOrderForm({
-      customer_name: order.customer_name,
-      product_id: order.product_id,
-      quantity: order.quantity,
-    })
-    setOrderErrors({})
-    setOrderEditId(order.order_id)
-    setShowOrderForm(true)
-  }
+  const handleEdit = (order) => {
+    setForm({
+      product_id: order.product_id || '',
+      quantity: order.quantity || '',
+      customer_name: order.customer_name || '',
+    });
+    setFieldErrors({});
+    setGlobalError(null);
+    setEditId(order.order_id);
+    setShowForm(true);
+  };
 
-  const handleOrderCloseForm = () => {
-    setShowOrderForm(false)
-    setOrderEditId(null)
-  }
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditId(null);
+    setFieldErrors({});
+    setGlobalError(null);
+  };
 
-  const handleOrderDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) return
-    await fetch(`http://localhost:8001/orders/${id}`, { method: 'DELETE' })
-    fetchOrders()
-    fetchProducts() // Update stock after deletion
-  }
-
-  const handleOrderChange = (e) => {
-    setOrderForm({ ...orderForm, [e.target.name]: e.target.value })
-  }
-
-  const handleOrderSubmit = async (e) => {
-    e.preventDefault()
-    setOrderErrors({})
-    const payload = {
-      customer_name: orderForm.customer_name,
-      product_id: Number(orderForm.product_id),
-      quantity: Number(orderForm.quantity)
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    if (fieldErrors[name]) {
+      setFieldErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (form.product_id === '' || isNaN(Number(form.product_id)) || Number(form.product_id) <= 0) {
+      newErrors.product_id = 'Product ID must be a positive number.';
+    }
+    if (form.quantity === '' || isNaN(Number(form.quantity)) || Number(form.quantity) <= 0) {
+      newErrors.quantity = 'Quantity must be a positive number.';
+    }
+    if (!form.customer_name.trim()) {
+      newErrors.customer_name = 'Customer name is required.';
+    }
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const clientErrors = validateForm();
+    if (Object.keys(clientErrors).length > 0) {
+      setFieldErrors(clientErrors);
+      setGlobalError(null);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFieldErrors({});
+    setGlobalError(null);
+
+    const payload = {
+      product_id: Number(form.product_id),
+      quantity: Number(form.quantity),
+      customer_name: form.customer_name.trim(),
+    };
+
     try {
-      let res
-      if (orderEditId) {
-        res = await fetch(`http://localhost:8001/orders/${orderEditId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-      } else {
-        res = await fetch('http://localhost:8001/orders/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
+      let response;
+      let url = `${ORDER_API_BASE_URL}/orders/`;
+      let method = 'POST';
+
+      if (editId) {
+        url = `${ORDER_API_BASE_URL}/orders/${editId}`;
+        method = 'PUT';
       }
-      if (res.status === 201 || res.status === 200) {
-        setShowOrderForm(false)
-        setOrderEditId(null)
-        fetchOrders()
-        fetchProducts()
-      } else if (res.status === 422) {
-        const errorData = await res.json()
-        const fieldErrors = {}
+
+      response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        handleCloseForm();
+        fetchOrders();
+      } else if (response.status === 422) {
+        const errorData = await response.json();
+        const apiFieldErrors = {};
         if (errorData && errorData.detail) {
           for (const err of errorData.detail) {
-            const loc = err.loc[err.loc.length - 1]
-            fieldErrors[loc] = err.msg
+            const loc = err.loc[err.loc.length - 1];
+            apiFieldErrors[loc] = err.msg;
           }
         }
-        setOrderErrors(fieldErrors)
+        setFieldErrors(apiFieldErrors);
+        setGlobalError("Please correct the form errors provided by the server.");
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || `Server error: ${response.status}`;
+        console.error("API Error during order submission:", response.status, errorMessage);
+        setGlobalError(`Error: ${errorMessage}. Please try again.`);
       }
-    } catch {}
-  }
+    } catch (networkError) {
+      console.error("Network error during order submission:", networkError);
+      setGlobalError("A network error occurred. Please check your connection to the Order Service.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // UI
+  // --- Order Deletion Handler (No changes needed here) ---
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this order? This action will return the product quantity to stock.')) {
+      return;
+    }
+    setGlobalError(null);
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${ORDER_API_BASE_URL}/orders/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || `Failed to delete order. Status: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+      fetchOrders();
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      setGlobalError(`Failed to delete order: ${error.message}.`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Component Rendering ---
   return (
-    <div>
-      <button
-        style={{
-          background: '#2979ff',
-          color: 'white',
-          padding: '8px 16px',
-          border: 'none',
-          borderRadius: 4,
-          fontWeight: 'bold',
-          marginBottom: 16,
-          cursor: 'pointer',
-        }}
-        onClick={handleOrderOpenForm}
-      >
-        Add Order
-      </button>
-
-      {showOrderForm && (
-        <div
-          style={{
-            border: '1px solid #eee',
-            borderRadius: 8,
-            padding: 25,
-            marginBottom: 32,
-            maxWidth: '100vw',
-            width: 500,
-            background: '#f9f9f9',
-          }}
-        >
-          <h2 style={{ color: 'black' }}>{orderEditId ? 'Edit Order' : 'Add New Order'}</h2>
-          <form onSubmit={handleOrderSubmit} autoComplete="off" style={{ color: 'black', padding: 10 }}>
-            <div style={{ marginBottom: 16, color: 'black' }}>
-              <label>
-                Customer Name:
-                <input
-                  type="text"
-                  name="customer_name"
-                  value={orderForm.customer_name}
-                  onChange={handleOrderChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
-                  required
-                />
-              </label>
-              {orderErrors.customer_name && (
-                <div style={{ color: 'red', fontSize: 12 }}>{orderErrors.customer_name}</div>
-              )}
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label>
-                Product:
-                <select
-                  name="product_id"
-                  value={orderForm.product_id}
-                  onChange={handleOrderChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
-                  required
-                >
-                  <option value="">Select product...</option>
-                  {products.map((prod) => (
-                    <option key={prod.product_id} value={prod.product_id}>
-                      {prod.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {orderErrors.product_id && (
-                <div style={{ color: 'red', fontSize: 12 }}>{orderErrors.product_id}</div>
-              )}
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label>
-                Quantity:
-                <input
-                  type="number"
-                  name="quantity"
-                  value={orderForm.quantity}
-                  onChange={handleOrderChange}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
-                  min="1"
-                  required
-                />
-              </label>
-              {orderErrors.quantity && (
-                <div style={{ color: 'red', fontSize: 12 }}>{orderErrors.quantity}</div>
-              )}
-            </div>
-            <button
-              type="submit"
-              style={{
-                background: '#2979ff',
-                color: 'white',
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: 4,
-                fontWeight: 'bold',
-                marginRight: 8,
-                cursor: 'pointer',
-              }}
-            >
-              {orderEditId ? 'Update' : 'Submit'}
-            </button>
-            <button
-              type="button"
-              onClick={handleOrderCloseForm}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #bbb',
-                background: 'white',
-                color: '#444',
-                borderRadius: 4,
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-          </form>
+    <>
+      {globalError && (
+        <div className="status-message error">
+          {globalError}
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        {orders.length === 0 ? (
-          <p>No orders found.</p>
-        ) : (
-          orders.map((order) => (
-            <div
-              key={order.order_id}
-              style={{
-                border: '1px solid #ddd',
-                borderRadius: 8,
-                padding: 16,
-                width: 320,
-                background: '#fff',
-                boxShadow: '0 1px 2px #eee',
-                position: 'relative',
-              }}
-            >
-              <h3 style={{ margin: '8px 0' }}>
-                Order #{order.order_id}
-              </h3>
-              <div style={{ marginBottom: 6 }}>
-                <b>Customer:</b> {order.customer_name}
-              </div>
-              <div style={{ marginBottom: 6 }}>
-                <b>Product:</b> {
-                  (products.find(p => p.product_id === order.product_id)?.name) || order.product_id
-                }
-              </div>
-              <div style={{ marginBottom: 6 }}>
-                <b>Quantity:</b> {order.quantity}
-              </div>
-              <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
-                <button
-                  style={{
-                    background: '#2979ff',
-                    color: 'white',
-                    padding: '6px 12px',
-                    border: 'none',
-                    borderRadius: 4,
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => handleOrderEdit(order)}
-                >
-                  Edit
-                </button>
-                <button
-                  style={{
-                    background: '#e53935',
-                    color: 'white',
-                    padding: '6px 12px',
-                    border: 'none',
-                    borderRadius: 4,
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => handleOrderDelete(order.order_id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  )
+      <Button variant="primary" onClick={handleOpenForm} className="mb-lg">
+        Create New Order
+      </Button>
+
+      {showForm && (
+        <OrderForm
+          form={form}
+          fieldErrors={fieldErrors}
+          isSubmitting={isSubmitting}
+          editId={editId}
+          handleChange={handleChange}
+          handleSubmit={handleSubmit}
+          onCloseForm={handleCloseForm}
+          globalError={globalError}
+        />
+      )}
+
+      {isLoading && orders.length === 0 && !globalError ? (
+        <p className="status-message loading">Loading orders...</p>
+      ) : orders.length === 0 && !globalError ? (
+        <p className="status-message">No orders found. Create one to get started!</p>
+      ) : (
+        <OrderList
+          orders={orders}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          PRODUCT_API_BASE_URL={PRODUCT_API_BASE_URL}
+        />
+      )}
+    </>
+  );
 }
+
+export default OrdersPage;

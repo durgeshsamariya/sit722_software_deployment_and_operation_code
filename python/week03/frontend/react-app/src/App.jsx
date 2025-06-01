@@ -1,56 +1,44 @@
-import { useState } from "react"
-import ProductsPage from "./pages/ProductsPage"
-import OrdersPage from "./pages/OrdersPage"
+// frontend/product_service/src/App.jsx
 
-export default function App() {
-  const [page, setPage] = useState("products")
+import React, { useState } from 'react'; // Import useState
+import ProductsPage from './pages/ProductsPage';
+import OrdersPage from './pages/OrdersPage'; // Import the new OrdersPage component
+import Button from './components/Button'; // Import Button for navigation
+
+function App() {
+  // State to manage which page is currently active: 'products' or 'orders'
+  const [activePage, setActivePage] = useState('products'); // Default to products page
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        minWidth: "100vw",
-        background: "#f4f6fb",
-        color: "#212121",
-        fontFamily: "Segoe UI, sans-serif",
-        margin: 10,
-        padding: 20,
-      }}
-    >
-      <h1>Mini Ecommerce</h1>
-      {/* Tab Navigation */}
-      <div style={{ marginBottom: 24, display: "flex", gap: 16 }}>
-        <button
-          onClick={() => setPage("products")}
-          style={{
-            background: page === "products" ? "#2979ff" : "#f2f2f2",
-            color: page === "products" ? "white" : "#2979ff",
-            border: "none",
-            borderRadius: 4,
-            fontWeight: "bold",
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}
+    <div className="app-container">
+      {/* Global Application Header */}
+      <h1 className="app-title">My E-commerce Admin Dashboard</h1>
+
+      {/* Navigation Buttons */}
+      <div className="navigation-tabs mb-lg">
+        <Button
+          variant={activePage === 'products' ? 'primary' : 'secondary'}
+          onClick={() => setActivePage('products')}
         >
-          Products
-        </button>
-        <button
-          onClick={() => setPage("orders")}
-          style={{
-            background: page === "orders" ? "#2979ff" : "#f2f2f2",
-            color: page === "orders" ? "white" : "#2979ff",
-            border: "none",
-            borderRadius: 4,
-            fontWeight: "bold",
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}
+          Manage Products
+        </Button>
+        <Button
+          variant={activePage === 'orders' ? 'primary' : 'secondary'}
+          onClick={() => setActivePage('orders')}
+          className="ml-sm"
         >
-          Orders
-        </button>
+          Manage Orders
+        </Button>
       </div>
-      {/* Page Content */}
-      {page === "products" ? <ProductsPage /> : <OrdersPage />}
+
+      {/* Conditionally render the active page */}
+      {activePage === 'products' ? (
+        <ProductsPage />
+      ) : (
+        <OrdersPage />
+      )}
     </div>
-  )
+  );
 }
+
+export default App;

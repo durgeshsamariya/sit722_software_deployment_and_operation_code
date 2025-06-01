@@ -1,11 +1,16 @@
 # backend/order_service/app/schemas.py
 
 """
-Pydantic schemas for Order Service validation and serialization.
+Pydantic schemas for the Order Service API.
+
+These schemas define the data structures used for validating incoming requests
+(e.g., creating or updating orders) and for serializing outgoing responses
+(e.g., returning order details). They ensure data integrity and provide
+clear API contracts for the Order microservice.
 """
 
 from datetime import datetime
-
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -26,4 +31,4 @@ class OrderResponse(OrderCreate):
     updated_at: datetime | None = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

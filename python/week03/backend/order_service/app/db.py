@@ -1,7 +1,11 @@
 # backend/order_service/app/db.py
 
 """
-Database connection setup for Order Service.
+Database connection setup and session management for the Order Service.
+
+This module configures the SQLAlchemy engine and session factory for connecting
+to a PostgreSQL database. It also provides a FastAPI dependency function
+(`get_db`) to manage database sessions effectively for API endpoints.
 """
 
 import os
@@ -20,6 +24,8 @@ POSTGRES_DB = os.getenv("POSTGRES_DB", "orders")
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
+# Construct the full database connection URL using an f-string for readability.
+# Format: "postgresql://user:password@host:port/database_name"
 DATABASE_URL = (
     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
     f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
