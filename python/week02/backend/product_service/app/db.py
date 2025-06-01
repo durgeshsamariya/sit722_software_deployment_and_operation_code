@@ -3,11 +3,11 @@
 """
 Database configuration and session management for FastAPI app.
 """
-
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
+
 
 # Read DB settings from environment variables, with defaults for local/dev
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -25,12 +25,20 @@ DATABASE_URL = (
 
 # Create SQLAlchemy engine and session
 engine = create_engine(DATABASE_URL)
+
+# Configure a sessionmaker to create new database sessions.
+# autocommit=False ensures transactions must be committed explicitly.
+# autoflush=False means changes aren't flushed to DB until commit or explicit flush.
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
 def get_db():
-    """Yield a new database session. Closes after use."""
+    """
+    Dependency to provide a new database session for FastAPI endpoints.
+    A session is created for each request and automatically closed after use.
+    """
     db = SessionLocal()
     try:
         yield db

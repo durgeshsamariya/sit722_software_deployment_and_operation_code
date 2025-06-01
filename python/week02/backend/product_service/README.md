@@ -2,44 +2,90 @@
 
 # Product Service – Mini E-commerce Example
 
-This is the Product microservice of a mini e-commerce app. It is built with **FastAPI** and uses **PostgreSQL** as the database.  
-You will learn how to run a modern Python web service using Docker, and interact with it via REST endpoints.
+This is the Product microservice, a core component of our mini e-commerce application. It's built with FastAPI (a modern, fast Python web framework) and uses PostgreSQL as its robust relational database.
+
+In this module, you'll gain hands-on experience deploying and interacting with a contemporary Python web service using Docker and Docker Compose, and understanding its REST API endpoints.
 
 ---
 
-## 1. Clone the Repository
+## 1. Project Structure
 
-```bash
-git clone <REPO_URL>
-cd <REPO_ROOT>/backend/product_service
+week02/backend/product_service/
+├── app/
+│   ├── main.py        # FastAPI application entry point and API endpoints.
+│   ├── db.py          # Database configuration, SQLAlchemy engine, and session management.
+│   ├── models.py      # SQLAlchemy ORM models, defining the database table schema (e.g., Product).
+│   └── schemas.py     # Pydantic schemas for data validation (request bodies) and response serialization.
+├── tests/
+│   └── test_main.py   # Pytest integration tests for the API endpoints.
+├── requirements.txt   # Production Python dependencies required to run the application.
+├── requirements-dev.txt # Development and testing Python dependencies (e.g., pytest, httpx).
+└── Dockerfile         # Instructions for building the Docker image for the Product Service.
+
+
+## 2. Getting Started
+Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- Git: For cloning the repository.
+- Docker Desktop (or Docker Engine): Essential for building and running containers.
+- Python 3.10+ and pip: For local development and running tests outside Docker.
+
+
+### 2.1 Clone the Repository
+
+First, clone the repository to your local machine and navigate to the product service directory:
+
+### 2.2. Database Setup (Important!)
+
+Before running the service, you must manually create the PostgreSQL database that the application will connect to. The application itself will create the necessary tables within this database on startup, but not the database itself.
+
+- Ensure PostgreSQL is running.
+- Connect to your PostgreSQL server (e.g., using psql, pgAdmin, or your preferred SQL client):
+
+```
+psql -h localhost -p 5432 -U postgres
 ```
 
----
+- Create the database:
+```
+CREATE DATABASE products;
+```
 
-## 2. Project Structure
+## 3. Local Development
 
-product_service/
-├── app/
-│   ├── main.py        # FastAPI entry point
-│   └── db.py          # Database config
-├── requirements.txt   # Python dependencies
-├── Dockerfile         # Build for FastAPI
-└── docker-compose.yml # For local development
+### 3.1. Install Dependencies
 
-## 3. Run Locally (with Docker Compose)
+For local development and running tests, you'll need both production and development dependencies. It's recommended to use a Python virtual environment.
+```
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 
-You need Docker Desktop (or Docker Engine) installed.
+# Install all dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+```
+### 3.2. Run with Docker Compose
 
-1. Open a terminal and navigate to the product_service folder.
+This is the recommended way to run the service and its database for local development, as it handles the database container setup automatically.
 
-2. Run Docker Compose to build and start both the API and database:
-`docker compose up --build`
+1. Navigate to the product_service folder if you're not already there:
+```
+cd week02/backend/product_service
+```
 
-3. Wait for both product_service and db containers to show as healthy.
+2. Build and start the containers:
+```
+docker build -t week02_product_service .
+docker run -d -p 8000:8000 week02_product_serivce
+```
 
-4. The FastAPI service will be available at:
-http://localhost:8000/docs
-(This is the interactive API documentation provided by FastAPI.)
+3. The FastAPI service will be available at:
+- API Documentation (Swagger UI): http://localhost:8000/docs
+- Alternative Docs (ReDoc): http://localhost:8000/redoc
+
+Use the /docs page to interact with the API directly in your browser.
 
 ## 4. Example Endpoints
 
@@ -53,11 +99,4 @@ You can use the /docs page to try out the API, or tools like Postman or curl.
 `PUT /products/{product_id}/stock`
 - Get, update, delete by ID:
 `GET /products/{id}, PUT /products/{id}, DELETE /products/{id}`
-
-## 5. Stopping the Service
-
-Press Ctrl+C in your terminal to stop the service,
-then run:
-`docker compose down`
-to remove containers and networks.
 
