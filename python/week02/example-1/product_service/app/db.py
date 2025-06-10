@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 # Read DB settings from environment variables, with defaults for local/dev
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "products")
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 

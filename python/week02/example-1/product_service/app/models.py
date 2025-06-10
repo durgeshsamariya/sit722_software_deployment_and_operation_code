@@ -15,7 +15,7 @@ class Product(Base):
     Represents a product with its details and stock quantity.
     """
     # Name of the database table
-    __tablename__ = "products_week02" 
+    __tablename__ = "products_week02_part_01" 
 
     # Primary Key: Unique identifier for each product, auto-incrementing.
     product_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
