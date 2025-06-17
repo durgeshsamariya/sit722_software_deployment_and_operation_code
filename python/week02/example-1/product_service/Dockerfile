@@ -1,4 +1,4 @@
-# week02/backend/product_service/Dockerfile
+# week02/example-1/product_service/Dockerfile
 
 # Use a specific, slim Python base image for a smaller final image size.
 # python:3.10-slim provides necessary Python runtime without extra bulk.
@@ -6,7 +6,7 @@ FROM python:3.10-slim-buster
 
 # Set the working directory inside the container.
 # All subsequent commands (COPY, RUN, CMD) will be relative to this directory.
-WORKDIR /app
+WORKDIR /code
 
 # --- Dependency Installation ---
 # Copy only the requirements file first. This allows Docker to cache this layer.
@@ -25,12 +25,15 @@ RUN pip install --upgrade pip && \
 # Copy the application code after dependencies are installed.
 # This leverages Docker's layer caching: if only code changes,
 # the pip install layer (which is often slow) isn't invalidated.
-COPY ./app /app/app
+COPY ./app /code/app
 
 # --- Container Configuration ---
 # Expose the port on which the FastAPI application will listen.
 # This is mainly for documentation and network configuration awareness.
 EXPOSE 8000
+
+# Set environment variables for the PostgreSQL database connection.
+ENV POSTGRES_HOST=host.docker.internal
 
 # Start the FastAPI app
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
