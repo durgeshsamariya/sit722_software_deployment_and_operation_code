@@ -1,4 +1,4 @@
-# frontend/Dockerfile
+# week02/example-2/frontend/Dockerfile
 # Uses Nginx to serve the static frontend files.
 
 # Use a lightweight Nginx image

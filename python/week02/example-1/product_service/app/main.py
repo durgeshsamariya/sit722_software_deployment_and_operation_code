@@ -1,4 +1,4 @@
-# week02/backend/product_service/app/main.py
+# week02/example-1/product_service/app/main.py
 
 """
 FastAPI Product Service API.
@@ -14,7 +14,7 @@ from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.exc import OperationalError  # For database connection errors
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from .db import Base, engine, get_db
@@ -24,8 +24,6 @@ from .schemas import ProductCreate, ProductResponse, ProductUpdate
 # -----------------------------
 # Configure Logging
 # -----------------------------
-# --- Standard Logging Configuration ---
-# Configure basic logging to stdout
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -117,8 +115,6 @@ async def health_check():
 # -----------------------------
 # CRUD Endpoints
 # -----------------------------
-
-
 @app.post(
     "/products/",
     response_model=ProductResponse,

@@ -1,13 +1,13 @@
-# week02/backend/product_service/app/db.py
+# week02/example-2/backend/product_service/app/db.py
 
 """
 Database configuration and session management for FastAPI app.
 """
 import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
 
 # Read DB settings from environment variables, with defaults for local/dev
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -25,10 +25,7 @@ DATABASE_URL = (
 
 # Create SQLAlchemy engine and session
 # pool_pre_ping=True helps maintain healthy connections in a pool
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True
-)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # Configure a sessionmaker to create new database sessions.
 # autocommit=False ensures transactions must be committed explicitly.

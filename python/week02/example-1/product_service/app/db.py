@@ -1,4 +1,4 @@
-# week02/backend/product_service/app/db.py
+# week02/example-1/product_service/app/db.py
 
 """
 Database configuration and session management for FastAPI app.

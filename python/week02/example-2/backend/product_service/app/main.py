@@ -1,4 +1,4 @@
-# week02/backend/product_service/app/main.py
+# week02/example-2/backend/product_service/app/main.py
 
 """
 FastAPI Product Service API.
@@ -7,29 +7,27 @@ and stock management. This service demonstrates a structured approach with
 separate database models and Pydantic schemas.
 """
 
-from fastapi import FastAPI, Depends, HTTPException, Query, status, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import OperationalError # For database connection errors
-
-from .db import engine, Base, get_db
-from .models import Product
-from .schemas import ProductCreate, ProductUpdate, ProductResponse
-
-import sys
 import logging
+import sys
 import time
-from typing import Optional, List
+from typing import List, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
+
+from .db import Base, engine, get_db
+from .models import Product
+from .schemas import ProductCreate, ProductResponse, ProductUpdate
 
 # -----------------------------
 # Configure Logging
 # -----------------------------
-# --- Standard Logging Configuration ---
-# Configure basic logging to stdout
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 app = FastAPI(
     title="Product Service API",
     description="Manages products and stock for mini-ecommerce app",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Enable CORS (for frontend dev/testing)
@@ -55,6 +53,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # --- FastAPI Event Handlers ---
 @app.on_event("startup")
@@ -68,20 +67,29 @@ async def startup_event():
     retry_delay_seconds = 5
     for i in range(max_retries):
         try:
-            logger.info(f"Attempting to connect to PostgreSQL and create tables (attempt {i+1}/{max_retries})...")
+            logger.info(
+                f"Attempting to connect to PostgreSQL and create tables (attempt {i+1}/{max_retries})..."
+            )
             Base.metadata.create_all(bind=engine)
-            logger.info("Successfully connected to PostgreSQL and ensured tables exist.")
-            break # Exit loop if successful
+            logger.info(
+                "Successfully connected to PostgreSQL and ensured tables exist."
+            )
+            break  # Exit loop if successful
         except OperationalError as e:
             logger.warning(f"Failed to connect to PostgreSQL: {e}")
             if i < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay_seconds} seconds...")
                 time.sleep(retry_delay_seconds)
             else:
-                logger.critical(f"Failed to connect to PostgreSQL after {max_retries} attempts. Exiting application.")
-                sys.exit(1) # Critical failure: exit if DB connection is unavailable
+                logger.critical(
+                    f"Failed to connect to PostgreSQL after {max_retries} attempts. Exiting application."
+                )
+                sys.exit(1)  # Critical failure: exit if DB connection is unavailable
         except Exception as e:
-            logger.critical(f"An unexpected error occurred during database startup: {e}", exc_info=True)
+            logger.critical(
+                f"An unexpected error occurred during database startup: {e}",
+                exc_info=True,
+            )
             sys.exit(1)
 
 
@@ -103,19 +111,19 @@ async def health_check():
     """
     return {"status": "ok", "service": "product-service"}
 
+
 # -----------------------------
 # CRUD Endpoints
 # -----------------------------
+
 
 @app.post(
     "/products/",
     response_model=ProductResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new product")
-async def create_product(
-    product: ProductCreate,
-    db: Session = Depends(get_db)
-):
+    summary="Create a new product",
+)
+async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     """
     Creates a new product entry in the database.
 
@@ -128,24 +136,38 @@ async def create_product(
         db.add(db_product)
         db.commit()
         db.refresh(db_product)
-        logging.info(f"Product '{db_product.name}' (ID: {db_product.product_id}) created successfully.")
+        logging.info(
+            f"Product '{db_product.name}' (ID: {db_product.product_id}) created successfully."
+        )
         return db_product
     except Exception as e:
         db.rollback()
         logger.error(f"Error creating product: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create product.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create product.",
+        )
 
 
 @app.get(
     "/products/",
     response_model=List[ProductResponse],
-    summary="List all products with pagination and search"
+    summary="List all products with pagination and search",
 )
 def list_products(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0, description="Number of items to skip (for pagination)."),
-    limit: int = Query(100, ge=1, le=100, description="Maximum number of items to return (for pagination)."),
-    search: str = Query(None, max_length=255, description="Search term for product name or description (case-insensitive).")
+    limit: int = Query(
+        100,
+        ge=1,
+        le=100,
+        description="Maximum number of items to return (for pagination).",
+    ),
+    search: str = Query(
+        None,
+        max_length=255,
+        description="Search term for product name or description (case-insensitive).",
+    ),
 ):
     """
     Retrieves a list of products from the database.
@@ -160,25 +182,23 @@ def list_products(
         search_pattern = f"%{search}%"
         logging.info(f"Applying search filter for term: {search}")
         query = query.filter(
-            (Product.name.ilike(search_pattern)) |
-            (Product.description.ilike(search_pattern))
+            (Product.name.ilike(search_pattern))
+            | (Product.description.ilike(search_pattern))
         )
     products = query.offset(skip).limit(limit).all()
     logger.info(f"Retrieved {len(products)} products (skip={skip}, limit={limit}).")
     return products
 
+
 @app.get(
     "/products/{product_id}",
     response_model=ProductResponse,
-    summary="Retrieve a product by ID"
+    summary="Retrieve a product by ID",
 )
-def get_product(
-    product_id: int,
-    db: Session = Depends(get_db)
-):
+def get_product(product_id: int, db: Session = Depends(get_db)):
     """
     Retrieves details of a single product by its unique ID.
-    
+
     - Returns a `ProductResponse` object if the product is found.
     - Raises a 404 HTTP exception if the product does not exist.
     """
@@ -190,29 +210,30 @@ def get_product(
     logging.info(f"Product '{product.name}' (ID: {product_id}) retrieved.")
     return product
 
+
 @app.put(
     "/products/{product_id}",
     response_model=ProductResponse,
-    summary="Update an existing product"
+    summary="Update an existing product",
 )
 async def update_product(
-    product_id: int,
-    updated: ProductUpdate,
-    db: Session = Depends(get_db)
+    product_id: int, updated: ProductUpdate, db: Session = Depends(get_db)
 ):
     """
     Updates existing product information in the database.
-    
+
     - Takes a `ProductUpdate` schema, allowing only specified fields to be updated.
     - Returns the updated product's details.
     - Raises a 404 HTTP exception if the product does not exist.
     """
-    logging.info(f"Updating product with ID: {product_id} with data: {updated.model_dump(exclude_unset=True)}")
+    logging.info(
+        f"Updating product with ID: {product_id} with data: {updated.model_dump(exclude_unset=True)}"
+    )
     product = db.query(Product).filter(Product.product_id == product_id).first()
     if not product:
         logging.warning(f"Product with ID: {product_id} not found for update.")
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     # Iterate over fields in the updated schema that were actually provided
     for field, value in updated.dict(exclude_unset=True).items():
         setattr(product, field, value)
@@ -220,25 +241,28 @@ async def update_product(
         db.add(product)
         db.commit()
         db.refresh(product)
-        logging.info(f"Product '{product.name}' (ID: {product_id}) updated successfully.")
+        logging.info(
+            f"Product '{product.name}' (ID: {product_id}) updated successfully."
+        )
         return product
     except Exception as e:
         db.rollback()
         logger.error(f"Error updating product {product_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not update product.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update product.",
+        )
+
 
 @app.delete(
     "/products/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a product by ID"
+    summary="Delete a product by ID",
 )
-def delete_product(
-    product_id: int,
-    db: Session = Depends(get_db)
-):
+def delete_product(product_id: int, db: Session = Depends(get_db)):
     """
     Deletes a product from the database by its unique ID.
-    
+
     - Returns a 204 No Content status code upon successful deletion.
     - Raises a 404 HTTP exception if the product does not exist.
     """
@@ -247,7 +271,7 @@ def delete_product(
     if not product:
         logging.warning(f"Product with ID: {product_id} not found for deletion.")
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     try:
         db.delete(product)
         db.commit()
@@ -257,6 +281,6 @@ def delete_product(
         logger.error(f"Error deleting product {product_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while deleting the product."
+            detail="An error occurred while deleting the product.",
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

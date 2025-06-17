@@ -6,9 +6,11 @@ These define the data structures for incoming requests and outgoing responses,
 ensuring data validation and clear API contracts.
 """
 
-from pydantic import BaseModel, Field, validator, ConfigDict
 from datetime import datetime
-from typing import Optional # Use Optional for fields that might be None
+from typing import Optional  # Use Optional for fields that might be None
+
+from pydantic import BaseModel, ConfigDict, Field, validator
+
 
 # Schema for creating a new product.
 # Used in POST /products/ endpoint.

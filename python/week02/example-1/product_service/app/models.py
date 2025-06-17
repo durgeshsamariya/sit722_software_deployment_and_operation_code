@@ -1,4 +1,4 @@
-# week02/backend/product_service/app/models.py
+# week02/example-1/product_service/app/models.py
 
 """
 SQLAlchemy database models for the Product Service.
@@ -18,7 +18,7 @@ class Product(Base):
     """
 
     # Name of the database table
-    __tablename__ = "products_week02_part_01"
+    __tablename__ = "products_week02_example_01"
 
     # Primary Key: Unique identifier for each product, auto-incrementing.
     product_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

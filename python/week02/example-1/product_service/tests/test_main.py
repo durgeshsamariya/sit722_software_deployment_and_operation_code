@@ -9,16 +9,14 @@ which is rolled back after the test completes.
 """
 
 import logging
-import time  # For the startup retry logic
+import time
 
 import pytest
-from app.db import SessionLocal, engine, get_db  # Import engine here as well
+from app.db import SessionLocal, engine, get_db
 from app.main import app
-from app.models import Base, Product  # Import Base to create tables on startup
+from app.models import Base, Product
 from fastapi.testclient import TestClient
-from sqlalchemy.exc import (
-    OperationalError,
-)  # For catching DB connection errors during setup
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 # Suppress noisy logs from SQLAlchemy/FastAPI during tests for cleaner output
@@ -126,9 +124,6 @@ def client():
     # which has a function scope, so each test will use its own session.
     with TestClient(app) as test_client:
         yield test_client
-
-
-# --- Product Service Tests ---
 
 
 def test_read_root(client: TestClient):
