@@ -1,9 +1,6 @@
 # week03/example-2/docker-compose.yml
-# Orchestrates the Product Microservice, Order Microservice, Frontend,
-# and two dedicated PostgreSQL Databases with persistent storage.
-# This version includes synchronous communication setup between Order and Product services.
 
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL Database for Product Service
@@ -16,12 +13,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432" # Map container port 5432 to host port 5432
+      - "5432:5432"
     volumes:
-      # Persistent volume for Product Service database data
-      - product_db_data_e2:/var/lib/postgresql/data
+      - product_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d products_e2"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -38,10 +34,9 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      # Persistent volume for Order Service database data
-      - order_db_data_e2:/var/lib/postgresql/data
+      - order_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d orders_e2"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -64,10 +59,10 @@ services:
       AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
     depends_on:
       product_db:
-        condition: service_healthy # Ensure product_db is healthy before starting
+        condition: service_healthy
     volumes:
       - ./backend/product_service/app:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 # Use --reload for dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   # Order Microservice (FastAPI)
   order_service:
@@ -79,18 +74,16 @@ services:
     ports:
       - "8001:8000"
     environment:
-      POSTGRES_HOST: order_db # Connects to the 'order_db' service within Docker network
-      # NEW: URL for the Product Service for inter-service communication
-      # 'product_service' refers to the service name in this Docker Compose file
-      PRODUCT_SERVICE_URL: http://product_service:8000 # Internal Docker network URL
+      POSTGRES_HOST: order_db
+      PRODUCT_SERVICE_URL: http://product_service:8000
     depends_on:
       order_db:
-        condition: service_healthy # Ensure order_db is healthy before starting
+        condition: service_healthy
       product_service:
-        condition: service_started # Ensure product_service is started for API calls
+        condition: service_started
     volumes:
       - ./backend/order_service/app:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 # Use --reload for dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   # Frontend Service (Simple HTML/JS served by Nginx)
   frontend:
@@ -99,18 +92,16 @@ services:
       dockerfile: Dockerfile
     container_name: product_order_frontend_e2
     restart: always
-    # Frontend connects to host ports, which are mapped to container ports
     ports:
-      - "3000:80" # Map container port 80 (Nginx default) to host port 3000
+      - "3000:80"
     depends_on:
       product_service:
         condition: service_started
       order_service:
         condition: service_started
     volumes:
-      - ./frontend:/usr/share/nginx/html # Mount frontend files directly
+      - ./frontend:/usr/share/nginx/html
 
-# Named volumes for data persistence for each database
 volumes:
-  product_db_data_e2: # Data for the Product Service's PostgreSQL database
-  order_db_data_e2:   # Data for the Order Service's PostgreSQL database
+  product_db_data:
+  order_db_data:

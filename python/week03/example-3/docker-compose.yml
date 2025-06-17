@@ -1,9 +1,6 @@
 # week03/example-3/docker-compose.yml
-# Orchestrates the Product Microservice, Order Microservice, Frontend,
-# and two dedicated PostgreSQL Databases with persistent storage.
-# This version includes synchronous communication setup between Order and Product services.
 
-version: '3.8'
+version: "3.8"
 
 services:
   # RabbitMQ Message Broker
@@ -25,7 +22,7 @@ services:
   # PostgreSQL Database for Product Service
   product_db:
     image: postgres:15-alpine
-    container_name: product_db_container_e3
+    container_name: product_db_container
     restart: always
     environment:
       POSTGRES_DB: products
@@ -35,7 +32,7 @@ services:
       - "5432:5432" # Map container port 5432 to host port 5432
     volumes:
       # Persistent volume for Product Service database data
-      - product_db_data_e3:/var/lib/postgresql/data
+      - product_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
       interval: 5s
@@ -45,7 +42,7 @@ services:
   # PostgreSQL Database for Order Service
   order_db:
     image: postgres:15-alpine
-    container_name: order_db_container_e3
+    container_name: order_db_container
     restart: always
     environment:
       POSTGRES_DB: orders
@@ -55,7 +52,7 @@ services:
       - "5433:5432"
     volumes:
       # Persistent volume for Order Service database data
-      - order_db_data_e3:/var/lib/postgresql/data
+      - order_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
       interval: 5s
@@ -65,16 +62,16 @@ services:
   # PostgreSQL Database for Customer Service
   customer_db:
     image: postgres:15-alpine
-    container_name: customer_db_container_e3
+    container_name: customer_db_container
     restart: always
     environment:
-      POSTGRES_DB: customers # New DB name for customer service
+      POSTGRES_DB: customers
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5434:5432" # Host:Container (Distinct port for customer db on host)
+      - "5434:5432"
     volumes:
-      - customer_db_data_e3:/var/lib/postgresql/data
+      - customer_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d customers"]
       interval: 5s
@@ -86,7 +83,7 @@ services:
     build:
       context: ./backend/product_service
       dockerfile: Dockerfile
-    container_name: product_api_container_e3
+    container_name: product_api_container
     restart: always
     ports:
       - "8000:8000" # Map container port 8000 to host port 8000 (as per your request)
@@ -107,22 +104,19 @@ services:
         condition: service_healthy
     volumes:
       - ./backend/product_service/app:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 # Use --reload for dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   # Order Microservice (FastAPI)
   order_service:
     build:
       context: ./backend/order_service
       dockerfile: Dockerfile
-    container_name: order_api_container_e2
+    container_name: order_api_container
     restart: always
     ports:
       - "8001:8000" # Map container port 8000 to host port 8001 (as per your request)
     environment:
       POSTGRES_HOST: order_db # Connects to the 'order_db' service within Docker network
-      # NEW: URL for the Product Service for inter-service communication
-      # 'product_service' refers to the service name in this Docker Compose file
-      PRODUCT_SERVICE_URL: http://product_service:8000 # Internal Docker network URL
       CUSTOMER_SERVICE_URL: http://customer_service:8000 # Internal Docker network URL for Customer Service
       RABBITMQ_HOST: rabbitmq # Internal Docker network hostname for RabbitMQ
       RABBITMQ_PORT: 5672
@@ -137,14 +131,14 @@ services:
         condition: service_healthy
     volumes:
       - ./backend/order_service/app:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 # Use --reload for dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-# Customer Microservice (FastAPI)
+  # Customer Microservice (FastAPI)
   customer_service:
     build:
       context: ./backend/customer_service
       dockerfile: Dockerfile
-    container_name: customer_api_container_e3
+    container_name: customer_api_container
     restart: always
     ports:
       - "8002:8000" # Host:Container (Customer Service on 8002)
@@ -169,7 +163,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: product_order_frontend_e3
+    container_name: frontend
     restart: always
     ports:
       - "3000:80" # Map container port 80 (Nginx default) to host port 3000
@@ -185,6 +179,6 @@ services:
 
 # Named volumes for data persistence for each database
 volumes:
-  product_db_data_e3:
-  order_db_data_e3:
-  customer_db_data_e3:
+  product_db_data:
+  order_db_data:
+  customer_db_data:

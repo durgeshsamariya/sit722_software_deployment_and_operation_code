@@ -3,6 +3,5 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 pydantic[email]
-python-dotenv
 pytest
 httpx

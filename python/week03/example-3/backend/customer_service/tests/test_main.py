@@ -8,19 +8,18 @@ Each test runs within its own database transaction for isolation,
 which is rolled back after the test completes.
 """
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 import logging
 import time
-from sqlalchemy.exc import OperationalError
 
+import pytest
+from app.db import Base, SessionLocal, engine, get_db
 # Import app, engine, get_db, SessionLocal, and Base from your main application's modules.
 # Adjusted imports to match the application's structure for testing.
 from app.main import app
-from app.db import get_db, engine, SessionLocal, Base
 from app.models import Customer
-
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
 
 # Suppress noisy logs from SQLAlchemy/FastAPI/Uvicorn during tests for cleaner output
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

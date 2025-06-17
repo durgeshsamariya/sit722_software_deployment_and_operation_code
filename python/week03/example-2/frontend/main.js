@@ -2,10 +2,10 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // API endpoints for the Product and Order services.
-    // These ports (8002 for Product, 8003 for Order) are mapped
+    // These ports (8000 for Product, 8001 for Order) are mapped
     // from the Docker containers to the host machine in docker-compose.yml for Example 2.
-    const PRODUCT_API_BASE_URL = 'http://localhost:8000'; // Updated port for Example 2
-    const ORDER_API_BASE_URL = 'http://localhost:8001';   // Updated port for Example 2
+    const PRODUCT_API_BASE_URL = 'http://localhost:8000';
+    const ORDER_API_BASE_URL = 'http://localhost:8001';
 
     // DOM Elements
     const messageBox = document.getElementById('message-box');
@@ -16,12 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const placeOrderForm = document.getElementById('place-order-form');
     const orderListDiv = document.getElementById('order-list');
 
-    // Shopping Cart State
     let cart = [];
-    let productsCache = {}; // Cache products fetched to easily get details for cart items
+    let productsCache = {};
 
-    // --- Utility Functions ---
-
+    // Utility Functions
     // Function to display messages to the user (success, error, info)
     function showMessage(message, type = 'info') {
         messageBox.textContent = message;
@@ -212,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cart.push({
                 product_id: productId,
                 name: productName,
-                price: productPrice, // price_at_purchase
+                price: productPrice,
                 quantity: 1
             });
         }
@@ -257,9 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Map cart items to OrderItemCreate schema
         const orderItems = cart.map(item => ({
-            product_id: parseInt(item.product_id, 10), // Ensure product_id is int
+            product_id: parseInt(item.product_id, 10),
             quantity: item.quantity,
-            price_at_purchase: item.price // price_at_purchase is float
+            price_at_purchase: item.price
         }));
 
         const newOrder = {
@@ -286,9 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const placedOrder = await response.json();
             showMessage(`Order ${placedOrder.order_id} placed successfully! Total: ${formatCurrency(placedOrder.total_amount)}`, 'success');
             
-            cart = []; // Clear cart after successful order
+            cart = [];
             updateCartDisplay();
-            placeOrderForm.reset(); // Clear form
+            placeOrderForm.reset();
             fetchOrders(); // Refresh order list
             fetchProducts(); // Also refresh product list to show updated stock
         } catch (error) {

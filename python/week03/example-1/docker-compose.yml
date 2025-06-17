@@ -1,23 +1,19 @@
 # week03/example-1/docker-compose.yml
-# Orchestrates the Product Microservice, Order Microservice, Frontend,
-# and two dedicated PostgreSQL Databases with persistent storage.
 
-version: '3.8'
+version: "3.8"
 
 services:
-  # PostgreSQL Database for Product Service
   product_db:
     image: postgres:15-alpine
     container_name: product_db_container
     restart: always
     environment:
-      POSTGRES_DB: products # Database name for product service
+      POSTGRES_DB: products
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432" # Map container port 5432 to host port 5432
+      - "5432:5432"
     volumes:
-      # Persistent volume for Product Service database data
       - product_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
@@ -25,19 +21,17 @@ services:
       timeout: 5s
       retries: 5
 
-  # PostgreSQL Database for Order Service
   order_db:
     image: postgres:15-alpine
     container_name: order_db_container
     restart: always
     environment:
-      POSTGRES_DB: orders # Database name for order service
+      POSTGRES_DB: orders
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432" # Map container port 5432 to host port 5433 (distinct from product_db)
+      - "5433:5432"
     volumes:
-      # Persistent volume for Order Service database data
       - order_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
@@ -45,69 +39,64 @@ services:
       timeout: 5s
       retries: 5
 
-  # Product Microservice (FastAPI)
   product_service:
     build:
-      context: ./backend/product_service # Build context for product service
+      context: ./backend/product_service
       dockerfile: Dockerfile
     container_name: product_api_container
     restart: always
     ports:
-      - "8000:8000" # Map container port 8000 to host port 8000
+      - "8000:8000"
+    image: week03_example01_product_service:latest
     environment:
-      DB_HOST: product_db # Connects to the 'product_db' service
+      POSTGRES_HOST: product_db
       # Azure Storage Configuration - Replace with your actual values for deployment
-      AZURE_STORAGE_ACCOUNT_NAME: ${AZURE_STORAGE_ACCOUNT_NAME} # Loaded from .env or host env
-      AZURE_STORAGE_ACCOUNT_KEY: ${AZURE_STORAGE_ACCOUNT_KEY}   # Loaded from .env or host env
+      AZURE_STORAGE_ACCOUNT_NAME: <AZURE_STORAGE_ACCOUNT_NAME>
+      AZURE_STORAGE_ACCOUNT_KEY: <AZURE_STORAGE_ACCOUNT_KEY>
       AZURE_STORAGE_CONTAINER_NAME: product-images
-      AZURE_SAS_TOKEN_EXPIRY_HOURS: 24 # SAS token validity for images
+      AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
     depends_on:
       product_db:
-        condition: service_healthy # Ensure product_db is healthy before starting
+        condition: service_healthy
     volumes:
-      # Mount the application code for live reloading during development (optional)
       - ./backend/product_service/app:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # Use --reload for dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-  # Order Microservice (FastAPI)
   order_service:
     build:
-      context: ./backend/order_service # Build context for order service
+      context: ./backend/order_service
       dockerfile: Dockerfile
+    image: week03_example01_order_service:latest
     container_name: order_api_container
     restart: always
     ports:
-      - "8001:8000" # Map container port 8000 to host port 8001 (distinct from product_service)
+      - "8001:8000"
     environment:
-      DB_HOST: order_db # Connects to the 'order_db' service
+      POSTGRES_HOST: order_db
     depends_on:
       order_db:
-        condition: service_healthy # Ensure order_db is healthy before starting
+        condition: service_healthy
     volumes:
-      # Mount the application code for live reloading during development (optional)
       - ./backend/order_service/app:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # Use --reload for dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-  # Frontend Service (Simple HTML/JS served by Nginx)
   frontend:
     build:
-      context: ./frontend # Build context is the frontend directory
+      context: ./frontend
       dockerfile: Dockerfile
+    image: week03_example01_frontend:latest
     container_name: product_order_frontend
     restart: always
     ports:
-      - "3000:80" # Map container port 80 (Nginx default) to host port 3000
+      - "3000:80"
     depends_on:
-      # Frontend needs both backend services to be up to function properly
       product_service:
         condition: service_started
       order_service:
         condition: service_started
     volumes:
-      # Mount the frontend code for development updates (optional)
-      - ./frontend:/usr/share/nginx/html # Mount frontend files directly
+      - ./frontend:/usr/share/nginx/html
 
-# Named volumes for data persistence for each database
 volumes:
-  product_db_data: # Data for the Product Service's PostgreSQL database
-  order_db_data:   # Data for the Order Service's PostgreSQL database
+  product_db_data:
+  order_db_data:

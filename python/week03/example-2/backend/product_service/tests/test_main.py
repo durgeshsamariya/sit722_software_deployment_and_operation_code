@@ -9,19 +9,20 @@ which is rolled back after the test completes.
 Includes tests for image_url and image upload functionality.
 """
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 import logging
-import time # For the startup retry logic
-from sqlalchemy.exc import OperationalError # For catching DB connection errors during setup
-from unittest.mock import patch, MagicMock # For mocking Azure Blob Storage
 import os
+import time  # For the startup retry logic
+from unittest.mock import MagicMock, patch  # For mocking Azure Blob Storage
 
+import pytest
+from app.db import SessionLocal, engine, get_db
 # Import app, engine, get_db, SessionLocal, and Base from your main application's modules.
 from app.main import app
-from app.db import get_db, engine, SessionLocal
-from app.models import Product, Base
+from app.models import Base, Product
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import \
+    OperationalError  # For catching DB connection errors during setup
+from sqlalchemy.orm import Session
 
 # Suppress noisy logs from SQLAlchemy/FastAPI during tests for cleaner output
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

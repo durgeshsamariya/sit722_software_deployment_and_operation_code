@@ -10,19 +10,19 @@ Crucially, these tests also mock the external HTTP calls to the Product Service
 to control its responses and test stock deduction scenarios.
 """
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 import logging
 import time
-from sqlalchemy.exc import OperationalError
 from decimal import Decimal
-from unittest.mock import patch, AsyncMock # For mocking httpx.AsyncClient
+from unittest.mock import AsyncMock, patch  # For mocking httpx.AsyncClient
 
+import pytest
+from app.db import SessionLocal, engine, get_db
 # Import app, engine, get_db, SessionLocal, and Base from your main application's modules.
-from app.main import app, PRODUCT_SERVICE_URL
-from app.db import get_db, engine, SessionLocal
-from app.models import Order, OrderItem, Base
+from app.main import PRODUCT_SERVICE_URL, app
+from app.models import Base, Order, OrderItem
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
 
 # Suppress noisy logs from SQLAlchemy/FastAPI/Uvicorn during tests for cleaner output
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

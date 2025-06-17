@@ -61,9 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 productsCache[product.product_id] = product; // Cache product details
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
-                 // --- DIAGNOSTIC LOG ---
-                console.log(`Product ID: ${product.product_id}, Image URL received:`, product.image_url);
-                // --- END DIAGNOSTIC LOG ---
                 productCard.innerHTML = `
                     <img src="${product.image_url || 'https://placehold.co/300x200/cccccc/333333?text=No+Image'}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Image+Error';" />
                     <h3>${product.name} (ID: ${product.product_id})</h3>

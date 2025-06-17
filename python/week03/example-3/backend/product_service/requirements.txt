@@ -5,5 +5,4 @@ psycopg2-binary
 python-multipart
 pydantic
 azure-storage-blob
-python-dotenv
 aio-pika

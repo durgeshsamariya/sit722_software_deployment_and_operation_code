@@ -1,18 +1,14 @@
 # week03/example-1/backend/product_service/app/models.py
 
-"""
-SQLAlchemy database models for the Product Service.
-These classes define the structure of tables in the database.
-Updated to include an 'image_url' for product photos.
-"""
-
-from sqlalchemy import Column, Integer, String, Text, Numeric, DateTime
+from sqlalchemy import Column, DateTime, Integer, Numeric, String, Text
 from sqlalchemy.sql import func
+
 from .db import Base
+
 
 class Product(Base):
     # Name of the database table
-    __tablename__ = "products_week03_part_01"
+    __tablename__ = "products_week03_example_01"
 
     # Primary Key: Unique identifier for each product, auto-incrementing.
     product_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -30,7 +26,7 @@ class Product(Base):
     stock_quantity = Column(Integer, nullable=False, default=0)
 
     # URL for the product image, stored in Azure Blob Storage. Optional.
-    image_url = Column(String(2048), nullable=True) # URL can be long
+    image_url = Column(String(2048), nullable=True)  # URL can be long
 
     # Timestamps for creation and last update.
     # 'created_at' defaults to current timestamp on creation.
@@ -41,4 +37,3 @@ class Product(Base):
     def __repr__(self):
         # A helpful representation when debugging
         return f"<Product(id={self.product_id}, name='{self.name}', stock={self.stock_quantity}, image_url='{self.image_url[:30] if self.image_url else 'None'}...')>"
-
