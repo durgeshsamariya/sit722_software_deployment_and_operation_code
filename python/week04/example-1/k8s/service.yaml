@@ -1,0 +1,17 @@
+# week04/example-1/k8s/product-service-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service-w04e1
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30000
+  type: NodePort
