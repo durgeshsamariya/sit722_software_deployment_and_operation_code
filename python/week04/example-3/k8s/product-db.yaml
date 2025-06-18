@@ -1,0 +1,75 @@
+# week04/example-3/k8s/product-db.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: product-db-pvc-w04e3
+  namespace: ecomm-w04e3-local-k8s
+spec:
+  accessModes:
+    - ReadWriteOnce # This volume can be mounted as read-write by a single node
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-db-deployment-w04e3
+  namespace: ecomm-w04e3-local-k8s
+  labels:
+    app: product-db
+spec:
+  replicas: 1 # Defaulting to 1 replica as requested for this example's scope
+  selector:
+    matchLabels:
+      app: product-db
+  template:
+    metadata:
+      labels:
+        app: product-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine # Use the same PostgreSQL image as in Docker Compose
+        ports:
+        - containerPort: 5432 # Default PostgreSQL port
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e3
+              key: PRODUCTS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: product-db-storage
+          mountPath: /var/lib/postgresql/data # Mount point for PostgreSQL data
+      volumes:
+      - name: product-db-storage
+        persistentVolumeClaim:
+          claimName: product-db-pvc-w04e3 # Link to the PVC defined above
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-db-service-w04e3 # Internal DNS name for the Product DB
+  namespace: ecomm-w04e3-local-k8s
+  labels:
+    app: product-db
+spec:
+  selector:
+    app: product-db # Selects pods with the label app: product-db
+  ports:
+    - protocol: TCP
+      port: 5432 # The port the service listens on (default PostgreSQL)
+      targetPort: 5432 # The port on the Pod (containerPort)
+  type: ClusterIP # Only accessible from within the cluster

@@ -1,0 +1,187 @@
+# week04/example-3/docker-compose.yml
+
+version: "3.8"
+
+services:
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672" # Standard AMQP port
+      - "15672:15672" # Management UI (accessible via http://localhost:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  # PostgreSQL Database for Product Service
+  product_db:
+    image: postgres:15-alpine
+    container_name: product_db_container
+    restart: always
+    environment:
+      POSTGRES_DB: products
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432" # Map container port 5432 to host port 5432
+    volumes:
+      # Persistent volume for Product Service database data
+      - product_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database for Order Service
+  order_db:
+    image: postgres:15-alpine
+    container_name: order_db_container
+    restart: always
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      # Persistent volume for Order Service database data
+      - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database for Customer Service
+  customer_db:
+    image: postgres:15-alpine
+    container_name: customer_db_container
+    restart: always
+    environment:
+      POSTGRES_DB: customers # New DB name for customer service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432" # Host:Container (Distinct port for customer db on host)
+    volumes:
+      - customer_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d customers"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Product Microservice (FastAPI)
+  product_service:
+    build:
+      context: ./backend/product_service
+      dockerfile: Dockerfile
+    image: week04_example03_product_service:latest
+    container_name: product_api_container
+    restart: always
+    ports:
+      - "8000:8000" # Map container port 8000 to host port 8000 (as per your request)
+    environment:
+      POSTGRES_HOST: product_db # Connects to the 'product_db' service within Docker network
+      AZURE_STORAGE_ACCOUNT_NAME: <your_storage_account_name> # Replace with your Azure Storage account name
+      AZURE_STORAGE_ACCOUNT_KEY: <your_storage_account_key> # Replace with your Azure Storage account key
+      AZURE_STORAGE_CONTAINER_NAME: <your_container_name> # Replace with your Azure Storage container name
+      AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
+      RABBITMQ_HOST: rabbitmq # Internal Docker network hostname for RabbitMQ
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+    depends_on:
+      product_db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./backend/product_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Order Microservice (FastAPI)
+  order_service:
+    build:
+      context: ./backend/order_service
+      dockerfile: Dockerfile
+    image: week04_example03_order_service:latest
+    container_name: order_api_container
+    restart: always
+    ports:
+      - "8001:8000" # Map container port 8000 to host port 8001 (as per your request)
+    environment:
+      POSTGRES_HOST: order_db # Connects to the 'order_db' service within Docker network
+      CUSTOMER_SERVICE_URL: http://customer_service:8000 # Internal Docker network URL for Customer Service
+      RABBITMQ_HOST: rabbitmq # Internal Docker network hostname for RabbitMQ
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+    depends_on:
+      order_db:
+        condition: service_healthy
+      customer_service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./backend/order_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Customer Microservice (FastAPI)
+  customer_service:
+    build:
+      context: ./backend/customer_service
+      dockerfile: Dockerfile
+    image: week04_example03_customer_service:latest
+    container_name: customer_api_container
+    restart: always
+    ports:
+      - "8002:8000"
+    environment:
+      POSTGRES_HOST: customer_db
+      POSTGRES_DB: customers
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+    depends_on:
+      customer_db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./backend/customer_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Frontend Service (Simple HTML/JS served by Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: week04_example03_frontend:latest
+    container_name: product_order_frontend
+    restart: always
+    ports:
+      - "3000:80" # Map container port 80 (Nginx default) to host port 3000
+    depends_on:
+      product_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+      customer_service:
+        condition: service_started
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+volumes:
+  product_db_data:
+  order_db_data:
+  customer_db_data:

@@ -1,0 +1,64 @@
+# week04/example-2/k8s/order-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service-w04e2 # Deployment name matches
+  labels:
+    app: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: order-service-container
+        image: week04_example02_order_service
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8001
+        env:
+        # Database connection details
+        - name: POSTGRES_HOST
+          value: order-db-service-w04e2
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e2 # ConfigMap name matches
+              key: ORDERS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e2 # Secret name matches
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e2 # Secret name matches
+              key: POSTGRES_PASSWORD
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e2 # ConfigMap name matches
+              key: PRODUCT_SERVICE_URL # This will be the internal ClusterIP for the Product Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service-w04e2 # Service name matches
+  labels:
+    app: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8001 # The port the service listens on inside the cluster
+      targetPort: 8001 # The port on the Pod (containerPort)
+      nodePort: 30001 # A high port (30000-32767) on your host machine to access the service (distinct from product-service)
+  type: NodePort # Exposes the service on a port on each Node's IP

@@ -1,0 +1,49 @@
+# week04/example-3/k8s/frontend.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-w04e3
+  namespace: ecomm-w04e3-local-k8s
+  labels:
+    app: frontend
+spec:
+  replicas: 1 # Defaulting to 1 replica
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: week04_example03_frontend:latest
+        imagePullPolicy: Never # Crucial for local testing with Docker Desktop K8s
+        ports:
+        - containerPort: 80 # Nginx runs on port 80 inside the container
+        env:
+        - name: PRODUCT_API_BASE_URL
+          value: http://product-service-w04e3:8000 # Internal ClusterIP
+        - name: ORDER_API_BASE_URL
+          value: http://order-service-w04e3:8001   # Internal ClusterIP
+        - name: CUSTOMER_API_BASE_URL
+          value: http://customer-service-w04e3:8002 # Internal ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-w04e3 # Service name matches
+  namespace: ecomm-w04e3-local-k8s
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80 # The port the service listens on inside the cluster
+      targetPort: 80 # The port on the Pod (containerPort where Nginx runs)
+      nodePort: 30003 # A high port (30000-32767) on your host machine to access the service (distinct)
+  type: NodePort # Exposes the service on a port on each Node's IP

@@ -1,0 +1,15 @@
+# week04/example-2/k8s/configmaps.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecomm-config-w04e2
+data:
+  # Database Names
+  PRODUCTS_DB_NAME: products
+  ORDERS_DB_NAME: orders
+  AZURE_STORAGE_CONTAINER_NAME: product-images
+  AZURE_SAS_TOKEN_EXPIRY_HOURS: "24"
+
+  PRODUCT_SERVICE_URL: http://product-service-w04e2:8000
+  ORDER_SERVICE_URL: http://order-service-w04e2:8001

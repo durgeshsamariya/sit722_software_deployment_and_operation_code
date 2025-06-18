@@ -1,0 +1,8 @@
+# week04/example-2/k8s/namespace.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecomm-w04e2-local-k8s
+  labels:
+    app: ecomm-w04e2-local-k8s

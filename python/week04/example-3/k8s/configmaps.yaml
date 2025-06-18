@@ -1,0 +1,20 @@
+# week04/example-3/k8s/configmaps.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecomm-config-w04e3
+  namespace: ecomm-w04e3-local-k8s # Namespace name matches
+data:
+  # Database Names
+  PRODUCTS_DB_NAME: products
+  ORDERS_DB_NAME: orders
+  CUSTOMERS_DB_NAME: customers
+
+  AZURE_STORAGE_CONTAINER_NAME: product-images
+  AZURE_SAS_TOKEN_EXPIRY_HOURS: "24"
+
+  PRODUCT_SERVICE_URL: http://product-service-w04e3:8000 # Product Service internal ClusterIP
+  ORDER_SERVICE_URL: http://order-service-w04e3:8001     # Order Service internal ClusterIP
+  CUSTOMER_SERVICE_URL: http://customer-service-w04e3:8002 # Customer Service internal ClusterIP
+  RABBITMQ_HOST: rabbitmq-service-w04e3 # RabbitMQ internal ClusterIP Service Name

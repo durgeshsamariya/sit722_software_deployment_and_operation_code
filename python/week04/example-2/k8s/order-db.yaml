@@ -1,0 +1,72 @@
+# week04/example-2/k8s/order-db.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: order-db-pvc-w04e2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-db-deployment-w04e2 # Deployment name matches
+  labels:
+    app: order-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-db
+  template:
+    metadata:
+      labels:
+        app: order-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine # Use the same PostgreSQL image as in Docker Compose
+        ports:
+        - containerPort: 5432 # Default PostgreSQL port
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e2 # ConfigMap name matches
+              key: ORDERS_DB_NAME # Point to the order database name
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e2 # Secret name matches
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e2 # Secret name matches
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: order-db-storage
+          mountPath: /var/lib/postgresql/data # Mount point for PostgreSQL data
+      volumes:
+      - name: order-db-storage
+        persistentVolumeClaim:
+          claimName: order-db-pvc-w04e2 # Link to the PVC defined above
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-db-service-w04e2 # Internal DNS name for the Order DB
+  labels:
+    app: order-db
+spec:
+  selector:
+    app: order-db # Selects pods with the label app: order-db
+  ports:
+    - protocol: TCP
+      port: 5432 # The port the service listens on (default PostgreSQL)
+      targetPort: 5432 # The port on the Pod (containerPort)
+  type: ClusterIP # Only accessible from within the cluster

@@ -1,0 +1,95 @@
+# week04/example-3/k8s/product-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-w04e3
+  namespace: ecomm-w04e3-local-k8s
+  labels:
+    app: product-service
+spec:
+  replicas: 1 # Defaulting to 1 replica
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+      - name: product-service-container
+        image: week04_example03_product_service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_HOST
+          value: product-db-service-w04e3
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e3
+              key: PRODUCTS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: POSTGRES_PASSWORD
+        - name: AZURE_STORAGE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: AZURE_STORAGE_ACCOUNT_NAME
+        - name: AZURE_STORAGE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: AZURE_STORAGE_ACCOUNT_KEY
+        - name: AZURE_STORAGE_CONTAINER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e3
+              key: AZURE_STORAGE_CONTAINER_NAME
+        - name: AZURE_SAS_TOKEN_EXPIRY_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e3
+              key: AZURE_SAS_TOKEN_EXPIRY_HOURS
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w04e3
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w04e3
+              key: RABBITMQ_PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service-w04e3
+  namespace: ecomm-w04e3-local-k8s
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - protocol: TCP
+      port: 8000 # The port the service listens on inside the cluster
+      targetPort: 8000 # The port on the Pod (containerPort)
+      nodePort: 30000 # A high port (30000-32767) on your host machine to access the service
+  type: NodePort # Exposes the service on a port on each Node's IP

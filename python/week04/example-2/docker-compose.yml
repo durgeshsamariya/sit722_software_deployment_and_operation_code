@@ -1,0 +1,111 @@
+# week04/example-2/docker-compose.yml
+
+version: "3.8"
+
+services:
+  product_db:
+    image: postgres:15-alpine
+    container_name: product_db_container
+    restart: always
+    environment:
+      POSTGRES_DB: products
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - product_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database for Order Service
+  order_db:
+    image: postgres:15-alpine
+    container_name: order_db_container
+    restart: always
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      # Persistent volume for Order Service database data
+      - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Product Microservice (FastAPI)
+  product_service:
+    build:
+      context: ./backend/product_service
+      dockerfile: Dockerfile
+    container_name: product_api_container
+    image: week04_example02_product_service:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_HOST: product_db # Connects to the 'product_db' service within Docker network
+      AZURE_STORAGE_ACCOUNT_NAME: <your_storage_account_name> # Replace with your Azure Storage account name
+      AZURE_STORAGE_ACCOUNT_KEY: <your_storage_account_key> # Replace with your Azure Storage account key
+      AZURE_STORAGE_CONTAINER_NAME: <your_container_name> # Replace with your Azure Storage container name
+      AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
+    depends_on:
+      product_db:
+        condition: service_healthy # Ensure product_db is healthy before starting
+    volumes:
+      - ./backend/product_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Order Microservice (FastAPI)
+  order_service:
+    build:
+      context: ./backend/order_service
+      dockerfile: Dockerfile
+    image: week04_example02_order_service:latest
+    container_name: order_api_container
+    restart: always
+    ports:
+      - "8001:8000"
+    environment:
+      POSTGRES_HOST: order_db # Connects to the 'order_db' service within Docker network
+      PRODUCT_SERVICE_URL: http://product_service:8000
+    depends_on:
+      order_db:
+        condition: service_healthy
+      product_service:
+        condition: service_started
+    volumes:
+      - ./backend/order_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Frontend Service (Simple HTML/JS served by Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: week04_example02_frontend:latest
+    container_name: product_order_frontend
+    restart: always
+    # Frontend connects to host ports, which are mapped to container ports
+    ports:
+      - "3000:80" # Map container port 80 (Nginx default) to host port 3000
+    depends_on:
+      product_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+    volumes:
+      - ./frontend:/usr/share/nginx/html # Mount frontend files directly
+
+# Named volumes for data persistence for each database
+volumes:
+  product_db_data: # Data for the Product Service's PostgreSQL database
+  order_db_data: # Data for the Order Service's PostgreSQL database
