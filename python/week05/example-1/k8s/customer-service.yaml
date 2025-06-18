@@ -1,0 +1,60 @@
+# week05/example-1/k8s/customer-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-service-w05-aks
+  namespace: ecomm-w05-aks
+  labels:
+    app: customer-service
+spec:
+  replicas: 1 # Defaulting to 1 replica
+  selector:
+    matchLabels:
+      app: customer-service
+  template:
+    metadata:
+      labels:
+        app: customer-service
+    spec:
+      containers:
+      - name: customer-service-container
+        image: week04durgeshsamariya.azurecr.io/customer_microservice:latest
+        imagePullPolicy: Always # Always pull the latest image from ACR
+        ports:
+        - containerPort: 8002 # Assuming Customer Service listens on port 8002
+        env:
+        # Database connection details
+        - name: POSTGRES_HOST
+          value: customer-db-service-w05-aks # Connects to the internal K8s Service for Customer DB
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w05-aks
+              key: CUSTOMERS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: POSTGRES_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-service-w05-aks # Internal ClusterIP Service for Customer Microservice
+  namespace: ecomm-w05-aks
+  labels:
+    app: customer-service
+spec:
+  selector:
+    app: customer-service
+  ports:
+    - protocol: TCP
+      port: 8002 # The port the service listens on inside the cluster
+      targetPort: 8002 # The port on the Pod (containerPort)
+  type: LoadBalancer # Only accessible from within the cluster, exposed via Ingress

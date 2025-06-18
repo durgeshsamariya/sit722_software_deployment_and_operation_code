@@ -1,0 +1,24 @@
+# week05/example-1/k8s/configmaps.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecomm-config-w05-aks
+  namespace: ecomm-w05-aks # Namespace name matches
+data:
+  # Database Names
+  PRODUCTS_DB_NAME: products
+  ORDERS_DB_NAME: orders
+  CUSTOMERS_DB_NAME: customers
+
+  # Azure Storage Container Name (from Week 03 Example 3)
+  AZURE_STORAGE_CONTAINER_NAME: product-images # Update if your container name was different in W03E3
+  AZURE_SAS_TOKEN_EXPIRY_HOURS: "24" # String form for ConfigMap
+
+  # Internal Service URLs (Kubernetes Service Names for inter-service communication)
+  # These are how your microservices will talk to each other within the cluster.
+  # Assuming Product:8000, Order:8001, Customer:8002
+  PRODUCT_SERVICE_URL: http://product-service-w05-aks:8000 # Product Service internal ClusterIP
+  ORDER_SERVICE_URL: http://order-service-w05-aks:8001     # Order Service internal ClusterIP
+  CUSTOMER_SERVICE_URL: http://customer-service-w05-aks:8002 # Customer Service internal ClusterIP
+  RABBITMQ_HOST: rabbitmq-service-w05-aks # RabbitMQ internal ClusterIP Service Name

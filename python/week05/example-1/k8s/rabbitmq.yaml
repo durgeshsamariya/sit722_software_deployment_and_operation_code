@@ -1,0 +1,57 @@
+# week05/example-1/k8s/rabbitmq.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment-w05-aks
+  namespace: ecomm-w05-aks
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management-alpine # Using the same RabbitMQ image as before
+        ports:
+        - containerPort: 5672 # AMQP port
+        - containerPort: 15672 # Management UI port
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: RABBITMQ_USER
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: RABBITMQ_PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service-w05-aks # Internal DNS name for RabbitMQ
+  namespace: ecomm-w05-aks
+  labels:
+    app: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp # For client connections
+      protocol: TCP
+      port: 5672
+      targetPort: 5672
+    - name: management # For management UI
+      protocol: TCP
+      port: 15672
+      targetPort: 15672
+  type: ClusterIP

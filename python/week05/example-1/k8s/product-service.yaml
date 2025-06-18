@@ -1,0 +1,97 @@
+# week05/example-1/k8s/product-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-w05-aks
+  namespace: ecomm-w05-aks
+  labels:
+    app: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+      - name: product-service-container
+        image: week04durgeshsamariya.azurecr.io/product_microservice:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000 # The port your FastAPI app runs on inside the container
+        env:
+        # Database connection details
+        - name: POSTGRES_HOST
+          value: product-db-service-w05-aks # Connects to the internal K8s Service for Product DB
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w05-aks
+              key: PRODUCTS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: POSTGRES_PASSWORD
+        # Azure Storage Configuration (from Week 03 Example 3)
+        - name: AZURE_STORAGE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: AZURE_STORAGE_ACCOUNT_NAME
+        - name: AZURE_STORAGE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: AZURE_STORAGE_ACCOUNT_KEY
+        - name: AZURE_STORAGE_CONTAINER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w05-aks
+              key: AZURE_STORAGE_CONTAINER_NAME
+        - name: AZURE_SAS_TOKEN_EXPIRY_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w05-aks
+              key: AZURE_SAS_TOKEN_EXPIRY_HOURS
+        # RabbitMQ connection for consuming stock deduction events
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w05-aks
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w05-aks
+              key: RABBITMQ_PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service-w05-aks # Internal ClusterIP Service for Product Microservice
+  namespace: ecomm-w05-aks
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service # Selects pods with the label app: product-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: LoadBalancer

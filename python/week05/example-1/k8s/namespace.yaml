@@ -1,0 +1,8 @@
+# week05/example-1/k8s/namespace.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecomm-w05-aks # Dedicated namespace for Week 05 AKS deployment
+  labels:
+    app: ecomm-w05-aks

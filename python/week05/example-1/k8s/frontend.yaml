@@ -1,0 +1,48 @@
+# week05/example-1/k8s/frontend.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-w05-aks
+  namespace: ecomm-w05-aks
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: week04durgeshsamariya.azurecr.io/frontend:latest
+        imagePullPolicy: Always # Always pull the latest image from ACR
+        ports:
+        - containerPort: 80 # Nginx runs on port 80 inside the container
+        env:
+        - name: PRODUCT_API_BASE_URL
+          value: http://product-service-w05-aks:8000 # Internal ClusterIP
+        - name: ORDER_API_BASE_URL
+          value: http://order-service-w05-aks:8001   # Internal ClusterIP
+        - name: CUSTOMER_API_BASE_URL
+          value: http://customer-service-w05-aks:8002 # Internal ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-w05-aks
+  namespace: ecomm-w05-aks
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
