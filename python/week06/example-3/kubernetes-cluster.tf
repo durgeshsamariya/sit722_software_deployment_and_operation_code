@@ -1,17 +1,16 @@
-#
-# Creates a managed Kubernetes cluster on Azure.
-#
+# week06/example-3/kubernetes-cluster.tf
+
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "${var.prefix}-aks"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.my_resource_group.name
   dns_prefix          = var.prefix
   kubernetes_version  = var.kubernetes_version
 
   default_node_pool {
     name       = "default"
     node_count = 1
-    vm_size    = "Standard_B2s"
+    vm_size    = "Standard_D2s_v3"
   }
 
   # Use a system‐assigned managed identity

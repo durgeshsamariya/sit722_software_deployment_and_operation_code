@@ -1,3 +1,5 @@
+# week06/example-3/provider.tf
+
 terraform {
   required_providers {
     azurerm = {
