@@ -1,0 +1,19 @@
+# week07/example-1/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s # How frequently Prometheus will scrape targets
+
+scrape_configs:
+  # Job for scraping Prometheus itself (its own metrics)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090'] # Prometheus's own metrics endpoint
+
+  # Job for scraping our Product Service
+  - job_name: 'product-service'
+    # metrics_path defaults to /metrics, which is what we configured
+    # scheme defaults to http
+    static_configs:
+      # 'product_service' is the Docker Compose service name for your Product Service
+      # '8000' is the internal port your FastAPI app listens on
+      - targets: ['product_service:8000']

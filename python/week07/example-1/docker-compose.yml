@@ -1,0 +1,91 @@
+# week07/example-1/docker-compose.yml
+
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml --web.enable-remote-write-receiver --web.enable-lifecycle # Standard command
+    ports:
+      - "9090:9090"
+    depends_on:
+      product_service:
+        condition: service_started
+    restart: unless-stopped
+
+  # --- New Grafana Service ---
+  grafana:
+    image: grafana/grafana:10.4.2
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin # Default admin user
+      GF_SECURITY_ADMIN_PASSWORD: admin # Default admin password
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+  product_db:
+    image: postgres:15-alpine
+    container_name: product_db_container
+    restart: always
+    environment:
+      POSTGRES_DB: products
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - product_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  product_service:
+    build:
+      context: ./backend/product_service
+      dockerfile: Dockerfile
+    container_name: product_api_container
+    image: week07_example01_product_service:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_HOST: product_db
+      AZURE_STORAGE_ACCOUNT_NAME: <your_storage_account_name>
+      AZURE_STORAGE_ACCOUNT_KEY: <your_storage_account_key>
+      AZURE_STORAGE_CONTAINER_NAME: <your_container_name>
+      AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
+    depends_on:
+      product_db:
+        condition: service_healthy
+    volumes:
+      - ./backend/product_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: week07_example01_frontend:latest
+    container_name: product_frontend
+    restart: always
+    ports:
+      - "3001:80"
+    depends_on:
+      product_service:
+        condition: service_started
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+volumes:
+  product_db_data:
+  prometheus_data:
+  grafana_data:

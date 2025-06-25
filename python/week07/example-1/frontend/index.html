@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week07 - Example01</title>
+    <script src="main.js" defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #0056b3;
+        }
+        #product-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #e9f5ff;
+        }
+        #product-form label {
+            font-weight: bold;
+        }
+        #product-form input[type="text"],
+        #product-form input[type="number"],
+        #product-form textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        #product-form textarea {
+            grid-column: span 2; /* Make textarea span both columns */
+            resize: vertical;
+        }
+        #product-form button {
+            grid-column: span 2; /* Make button span both columns */
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #product-form button:hover {
+            background-color: #0056b3;
+        }
+        #product-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .product-card {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .product-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .product-card p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        .product-card .price {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.1em;
+        }
+        .product-card .stock {
+            color: #6c757d;
+        }
+        .product-card button {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .product-card .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .product-card .delete-btn:hover {
+            background-color: #c82333;
+        }
+        .message-box {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Week 07 - Example 01</h1>
+
+        <div id="message-box" class="message-box"></div>
+
+        <h2>Add New Product</h2>
+        <form id="product-form">
+            <label for="product-name">Name:</label>
+            <input type="text" id="product-name" required>
+
+            <label for="product-price">Price:</label>
+            <input type="number" id="product-price" step="0.01" required>
+
+            <label for="product-stock">Stock Quantity:</label>
+            <input type="number" id="product-stock" required>
+            
+            <label for="product-description">Description:</label>
+            <textarea id="product-description" rows="3"></textarea>
+
+            <button type="submit">Add Product</button>
+        </form>
+
+        <h2>Available Products</h2>
+        <div id="product-list">
+            <!-- Products will be loaded here by JavaScript -->
+            <p>Loading products...</p>
+        </div>
+    </div>
+</body>
+</html>
