@@ -1,0 +1,66 @@
+# week07/example-3/k8s/order-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service-w07-aks
+  labels:
+    app: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+      annotations:
+        prometheus.io/scrape: 'true' # Instruct Prometheus to scrape this pod
+        prometheus.io/path: '/metrics' # The path where metrics are exposed
+        prometheus.io/port: '8001' # The port where metrics are exposed on the container
+    spec:
+      containers:
+      - name: order-service-container
+        image: AZURE_CONTAINER_REGISTRY/order_service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+        env:
+        - name: POSTGRES_HOST
+          value: order-db-service-w07-aks
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w07-aks
+              key: ORDERS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w07-aks
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w07-aks
+              key: POSTGRES_PASSWORD
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w07-aks
+              key: PRODUCT_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service-w07-aks
+  labels:
+    app: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8000
+  type: LoadBalancer

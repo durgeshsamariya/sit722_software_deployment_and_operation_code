@@ -1,0 +1,90 @@
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.4.2
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: "admin" # Default admin username
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin" # Default admin password (CHANGE THIS IN PRODUCTION!)
+            # Configure Prometheus as default data source for Grafana
+            - name: GF_PATHS_PROVISIONING
+              value: "/etc/grafana/provisioning"
+            - name: GF_DATA_SOURCE_PROVISIONING_FILES
+              value: "/etc/grafana/provisioning/datasources/datasources.yaml"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources-config
+  namespace: default
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-service:80 # Points to the Prometheus service in Kubernetes
+        isDefault: true
+        access: proxy
+        version: 1
+        editable: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service # This is the service you are looking for
+  labels:
+    app: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+    - protocol: TCP
+      port: 80 # External port
+      targetPort: 3000 # Internal container port for Grafana UI
+  type: LoadBalancer # Expose externally via a public IP

@@ -1,0 +1,19 @@
+# week07/example-3/k8s/configmaps.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecomm-config-w07-aks
+data:
+  # Database Names
+  PRODUCTS_DB_NAME: products
+  ORDERS_DB_NAME: orders
+
+  AZURE_STORAGE_CONTAINER_NAME: product-images
+  AZURE_SAS_TOKEN_EXPIRY_HOURS: "24"
+
+  # Internal Service URLs (Kubernetes Service Names for inter-service communication)
+  # These are how your microservices will talk to each other within the cluster.
+  # Assuming Product:8000, Order:8001
+  PRODUCT_SERVICE_URL: http://product-service-w07-aks:8000
+  ORDER_SERVICE_URL: http://order-service-w07-aks:8001

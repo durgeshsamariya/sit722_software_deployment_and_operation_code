@@ -1,0 +1,137 @@
+# week07/example-2/docker-compose.yml
+
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml --web.enable-remote-write-receiver --web.enable-lifecycle # Standard command
+    ports:
+      - "9090:9090"
+    depends_on:
+      product_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
+  product_db:
+    image: postgres:15-alpine
+    container_name: product_db_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: products
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - product_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database for Order Service
+  order_db:
+    image: postgres:15-alpine
+    container_name: order_db_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Product Microservice (FastAPI)
+  product_service:
+    build:
+      context: ./backend/product_service
+      dockerfile: Dockerfile
+    container_name: product_api_container
+    image: week07_example02_product_service:latest
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_HOST: product_db
+      AZURE_STORAGE_ACCOUNT_NAME: <your_storage_account_name>
+      AZURE_STORAGE_ACCOUNT_KEY: <your_storage_account_key>
+      AZURE_STORAGE_CONTAINER_NAME: <your_container_name>
+      AZURE_SAS_TOKEN_EXPIRY_HOURS: 24
+    depends_on:
+      product_db:
+        condition: service_healthy
+    volumes:
+      - ./backend/product_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  order_service:
+    build:
+      context: ./backend/order_service
+      dockerfile: Dockerfile
+    image: week07_example02_order_service:latest
+    container_name: order_api_container
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      POSTGRES_HOST: order_db
+      PRODUCT_SERVICE_URL: http://product_service:8000
+    depends_on:
+      order_db:
+        condition: service_healthy
+      product_service:
+        condition: service_started
+    volumes:
+      - ./backend/order_service/app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: week07_example02_frontend:latest
+    container_name: product_order_frontend
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      product_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+volumes:
+  product_db_data:
+  order_db_data:
+  prometheus_data:
+  grafana_data:

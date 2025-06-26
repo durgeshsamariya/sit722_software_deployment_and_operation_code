@@ -1,0 +1,81 @@
+# week07/example-3/k8s/product-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-w07-aks
+  labels:
+    app: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+      annotations:
+        prometheus.io/scrape: 'true' # Instruct Prometheus to scrape this pod
+        prometheus.io/path: '/metrics' # The path where metrics are exposed
+        prometheus.io/port: '8000' # The port where metrics are exposed on the container
+    spec:
+      containers:
+      - name: product-service-container
+        image: AZURE_CONTAINER_REGISTRY/product_service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_HOST
+          value: product-db-service-w07-aks
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w07-aks
+              key: PRODUCTS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w07-aks
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w07-aks
+              key: POSTGRES_PASSWORD
+        - name: AZURE_STORAGE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w07-aks
+              key: AZURE_STORAGE_ACCOUNT_NAME
+        - name: AZURE_STORAGE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-w07-aks
+              key: AZURE_STORAGE_ACCOUNT_KEY
+        - name: AZURE_STORAGE_CONTAINER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w07-aks
+              key: AZURE_STORAGE_CONTAINER_NAME
+        - name: AZURE_SAS_TOKEN_EXPIRY_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-w07-aks
+              key: AZURE_SAS_TOKEN_EXPIRY_HOURS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service-w07-aks
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: LoadBalancer

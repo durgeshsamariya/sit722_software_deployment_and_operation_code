@@ -1,0 +1,44 @@
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-node-read
+  # Important: ClusterRoles are not namespaced
+  labels:
+    app: prometheus
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["nodes", "nodes/proxy"] # Permissions to list/watch nodes and access their proxy endpoint (for cadvisor)
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"] # Permissions for pod/service/endpoint discovery
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"] # Might be needed for some discovery methods
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"] # For network policies if any other rules are present
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["authentication.k8s.io"] # For token review, if needed (though bearer token file is used)
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"] # For subject access review, if needed
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-node-read-default-sa-binding
+  # Important: ClusterRoleBindings are not namespaced, they bind cluster-wide roles
+  labels:
+    app: prometheus
+subjects:
+- kind: ServiceAccount
+  name: default # Binds to the 'default' service account
+  namespace: default # In the 'default' namespace
+roleRef:
+  kind: ClusterRole
+  name: prometheus-node-read # Refers to the ClusterRole defined above
+  apiGroup: rbac.authorization.k8s.io
