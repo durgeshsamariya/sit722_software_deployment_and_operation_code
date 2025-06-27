@@ -48,7 +48,7 @@ class OrderItem(Base):
     # Foreign key to the 'orders' table
     order_id = Column(
         Integer,
-        ForeignKey("orders_week03_part_03.order_id"),
+        ForeignKey("orders_week03_example_03.order_id"),
         nullable=False,
         index=True,
     )

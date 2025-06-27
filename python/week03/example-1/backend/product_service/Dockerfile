@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy the entire application code into the container
 # This copies the 'app' directory (main.py, db.py, models.py, schemas.py)
-COPY ./app /code/app
+COPY app /code/app
 
 # Expose the port that the FastAPI application will run on
 # Default for Uvicorn is 8000
