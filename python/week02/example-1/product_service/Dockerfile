@@ -5,7 +5,6 @@
 FROM python:3.10-slim-buster
 
 # Set the working directory inside the container.
-# All subsequent commands (COPY, RUN, CMD) will be relative to this directory.
 WORKDIR /code
 
 # --- Dependency Installation ---
@@ -29,7 +28,6 @@ COPY ./app /code/app
 
 # --- Container Configuration ---
 # Expose the port on which the FastAPI application will listen.
-# This is mainly for documentation and network configuration awareness.
 EXPOSE 8000
 
 # Set environment variables for the PostgreSQL database connection.
