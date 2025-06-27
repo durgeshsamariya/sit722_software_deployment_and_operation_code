@@ -15,7 +15,6 @@ from azure.storage.blob import (
     ContentSettings,
     generate_blob_sas,
 )
-from dotenv import load_dotenv  # For loading credentials from .env file
 from fastapi import (
     Depends,
     FastAPI,
@@ -49,9 +48,6 @@ logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 
 
 # --- Azure Blob Storage Configuration ---
-# Load environment variables from .env file (for local development)
-load_dotenv()
-
 AZURE_STORAGE_ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
 AZURE_STORAGE_ACCOUNT_KEY = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv(
