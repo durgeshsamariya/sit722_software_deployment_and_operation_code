@@ -59,10 +59,14 @@ Once your Docker images are built and your Kubernetes YAML configuration files (
 2.  **Ensure you are in the `week04/example-3/k8s` directory** which contains all your Kubernetes YAML files.
 
 3.  **Apply all Kubernetes manifests:**
+
     ```bash
     kubectl apply -f .
     ```
+
     This command tells `kubectl` to find all YAML files in the current directory (`.`) and apply them to the Kubernetes cluster.
+
+    **NOTE**: If you get error **_namespace "ecomm-w04e3-local-k8s" not found_** for few services then re-run above command.
 
 ## Verifying Deployment
 
