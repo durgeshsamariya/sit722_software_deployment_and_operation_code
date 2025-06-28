@@ -7,10 +7,10 @@ This example focuses on the absolute basics of deploying a single FastAPI micros
 Navigate to your `week04/example-1/backend/product_service` directory in your terminal:
 
 ```bash
-cd your_project_folder/week04/example-1/product_service
+cd week04/example-1/product_service
 ```
 
-Build the Docker image for your Product Service. The name `product-service-w04e1:latest` is used in the Kubernetes manifest.
+Build the Docker image for your Product Service.
 
 ```bash
 docker build --no-cache -t product-service-w4e1:latest .
