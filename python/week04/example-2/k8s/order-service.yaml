@@ -59,6 +59,6 @@ spec:
   ports:
     - protocol: TCP
       port: 8001 # The port the service listens on inside the cluster
-      targetPort: 8001 # The port on the Pod (containerPort)
+      targetPort: 8000 # The port on the Pod (containerPort)
       nodePort: 30001 # A high port (30000-32767) on your host machine to access the service (distinct from product-service)
   type: NodePort # Exposes the service on a port on each Node's IP
